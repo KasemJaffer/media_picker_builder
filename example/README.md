@@ -56,12 +56,15 @@ class _MyAppState extends State<MyApp> {
             onPressed: () {
               _checkPermission().then((granted) {
                 if (!granted) return;
-                
-                  // To build your own custom picker use this api                
-//                MediaPickerBuilder.getAlbums(withImages: true, withVideos: true).then((albums){
+
+                // To build your own custom picker use this api
+//                MediaPickerBuilder.getAlbums(
+//                  withImages: true,
+//                  withVideos: true,
+//                ).then((albums) {
 //                  print(albums);
 //                });
-                
+
                 // If you are happy with the example picker then you use this!
                 _buildPicker();
               });

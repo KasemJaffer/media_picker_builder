@@ -72,7 +72,9 @@ class GalleryWidgetItemState extends State<GalleryWidgetItem> {
                 )
               : FutureBuilder(
                   future: MediaPickerBuilder.getThumbnail(
-                      widget.mediaFile.id, widget.mediaFile.type),
+                    fileId: widget.mediaFile.id,
+                    type: widget.mediaFile.type,
+                  ),
                   builder:
                       (BuildContext context, AsyncSnapshot<String> snapshot) {
                     if (snapshot.hasData) {
