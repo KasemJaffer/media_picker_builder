@@ -10,12 +10,12 @@ import Foundation
 struct MediaFile : Codable {
     var id: String
     var dateAdded: Int? // seconds since 1970
-    var path: String
+    var path: String?
     var thumbnailPath: String?
     var orientation: Int
     var type: MediaType
     
-    init(id: String, dateAdded: Int?, path: String, thumbnailPath: String?, orientation: Int, type: MediaType) {
+    init(id: String, dateAdded: Int?, path: String?, thumbnailPath: String?, orientation: Int, type: MediaType) {
         self.id = id
         self.dateAdded = dateAdded
         self.path = path

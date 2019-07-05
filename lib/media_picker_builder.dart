@@ -14,16 +14,20 @@ class MediaPickerBuilder {
   /// Gets list of albums and its content based on the required flags.
   /// This method will also return the thumbnails IF it was already generated.
   /// If thumbnails returned are null you will have to call [getThumbnail]
-  /// to generate one and return its path
+  /// to generate one and return its path.
+  /// [loadIOSPaths] For iOS only, to optimize the speed of querying the files you can set this to false,
+  /// but if you do that you will have to get the path after selection is done
   static Future<List<Album>> getAlbums({
     @required bool withImages,
     @required bool withVideos,
+    bool loadIOSPaths = true,
   }) async {
     final String json = await _channel.invokeMethod(
       "getAlbums",
       {
         "withImages": withImages,
         "withVideos": withVideos,
+        "loadIOSPaths": loadIOSPaths,
       },
     );
     final encoded = jsonDecode(json);
@@ -53,8 +57,29 @@ class MediaPickerBuilder {
         "type": type.index,
       },
     );
-    print(path);
     return path;
+  }
+
+  /// Returns the [MediaFile] of a file by the unique identifier
+  /// [loadIOSPath] Whether or not to try and fetch path for iOS. Android always returns the path
+  /// [loadThumbnail] Whether or not to generate a thumbnail
+  static Future<MediaFile> getMediaFile({
+    @required String fileId,
+    @required MediaType type,
+    bool loadIOSPath = true,
+    bool loadThumbnail = false,
+  }) async {
+    final String json = await _channel.invokeMethod(
+      'getMediaFile',
+      {
+        "fileId": fileId,
+        "type": type.index,
+        "loadIOSPath": loadIOSPath,
+        "loadThumbnail": loadThumbnail,
+      },
+    );
+    final encoded = jsonDecode(json);
+    return MediaFile.fromJson(encoded);
   }
 
   /// A convenient function that converts image orientation to quarter turns for widget [RotatedBox]

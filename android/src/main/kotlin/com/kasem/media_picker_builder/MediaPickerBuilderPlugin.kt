@@ -50,6 +50,24 @@ class MediaPickerBuilderPlugin(private val context: Context) : MethodCallHandler
                         result.error("NOT_FOUND", "Unable to get the thumbnail", null)
                 }
             }
+            call.method == "getMediaFile" -> {
+                val fileId = call.argument<String>("fileId")
+                val type = call.argument<Int>("type")
+                val loadThumbnail = call.argument<Boolean>("loadThumbnail")
+                if (fileId == null || type == null || loadThumbnail == null) {
+                    result.error("INVALID_ARGUMENTS", "fileId, type or loadThumbnail must not be null", null)
+                    return
+                }
+                val mediaFile = FileFetcher.getMediaFile(
+                        context,
+                        fileId.toLong(),
+                        MediaFile.MediaType.values()[type],
+                        loadThumbnail)
+                if (mediaFile != null)
+                    result.success(mediaFile.toJSONObject().toString())
+                else
+                    result.error("NOT_FOUND", "Unable to find the file", null)
+            }
             else -> result.notImplemented()
         }
     }

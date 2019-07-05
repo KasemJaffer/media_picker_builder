@@ -1,3 +1,8 @@
+## 1.1.0+1
+
+* Added a new api to get media file based on file id
+* For iOS only, new flag [loadIOSPaths] added to optimize the speed of querying the files.
+
 ## 1.0.0+2
 
 * Remove meta dependency

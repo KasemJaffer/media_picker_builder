@@ -27,6 +27,72 @@ class FileFetcher {
             return JSONArray(albumHashMap.values.map { it.toJSONObject() })
         }
 
+        fun getMediaFile(context: Context, fileId: Long, type: MediaFile.MediaType, loadThumbnail: Boolean): MediaFile? {
+            var mediaFile: MediaFile? = null
+            when (type) {
+                MediaFile.MediaType.IMAGE -> {
+                    context.contentResolver.query(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            arrayOf(
+                                    MediaStore.Images.Media._ID,
+                                    MediaStore.Images.Media.DATE_ADDED,
+                                    MediaStore.Images.Media.DATA,
+                                    MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
+                                    MediaStore.Images.Media.BUCKET_ID,
+                                    MediaStore.Images.Media.ORIENTATION),
+                            "${MediaStore.Images.Media._ID} = $fileId",
+                            null,
+                            null)?.use { cursor ->
+
+                        if (cursor.count > 0) {
+                            cursor.moveToFirst()
+                            val fileDateAdded = cursor.getLong(1)
+                            val filePath = cursor.getString(2)
+                            val orientation = cursor.getInt(5)
+
+                            mediaFile = MediaFile(
+                                    fileId,
+                                    fileDateAdded,
+                                    filePath,
+                                    if (loadThumbnail) getThumbnail(context, fileId, type) else null,
+                                    orientation,
+                                    type
+                            )
+                        }
+                    }
+                }
+                MediaFile.MediaType.VIDEO -> {
+                    context.contentResolver.query(
+                            MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                            arrayOf(
+                                    MediaStore.Video.Media._ID,
+                                    MediaStore.Video.Media.DATE_ADDED,
+                                    MediaStore.Video.Media.DATA,
+                                    MediaStore.Video.Media.BUCKET_DISPLAY_NAME,
+                                    MediaStore.Video.Media.BUCKET_ID),
+                            "${MediaStore.Video.Media._ID} = $fileId",
+                            null,
+                            null)?.use { cursor ->
+
+                        while (cursor.moveToNext()) {
+                            val fileDateAdded = cursor.getLong(1)
+                            val filePath = cursor.getString(2)
+                            mediaFile = MediaFile(
+                                    fileId,
+                                    fileDateAdded,
+                                    filePath,
+                                    if (loadThumbnail) getThumbnail(context, fileId, type) else null,
+                                    0,
+                                    type
+                            )
+                        }
+                    }
+
+                }
+            }
+            return mediaFile
+        }
+
         private fun fetchImages(context: Context, albumHashMap: MutableMap<Long, Album>) {
             context.contentResolver.query(
                     MediaStore.Images.Media.EXTERNAL_CONTENT_URI,

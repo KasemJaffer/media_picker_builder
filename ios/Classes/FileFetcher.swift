@@ -9,7 +9,7 @@ import Foundation
 import Photos
 
 class FileFetcher {
-    static func getAlbums(withImages: Bool, withVideos: Bool)-> [Album] {
+    static func getAlbums(withImages: Bool, withVideos: Bool, loadPaths: Bool)-> [Album] {
         var albums = [Album]()
         
         let options = PHFetchOptions()
@@ -29,14 +29,14 @@ class FileFetcher {
         
         topLevelUserCollections.enumerateObjects{(topLevelAlbumAsset, index, stop) in
             let topLevelAlbum = topLevelAlbumAsset as! PHAssetCollection
-            let album = fetchAssets(forCollection: topLevelAlbum, fetchOptions: fetchOptions)
+            let album = fetchAssets(forCollection: topLevelAlbum, fetchOptions: fetchOptions, loadPath: loadPaths)
             if album != nil {
                 albums.append(album!)
             }
         }
         
         smartAlbums.enumerateObjects{(smartAlbum, index, stop) in
-            let album = fetchAssets(forCollection: smartAlbum, fetchOptions: fetchOptions)
+            let album = fetchAssets(forCollection: smartAlbum, fetchOptions: fetchOptions, loadPath: loadPaths)
             if album != nil {
                 albums.append(album!)
             }
@@ -44,11 +44,11 @@ class FileFetcher {
         return albums
     }
     
-    static func fetchAssets(forCollection collection: PHAssetCollection, fetchOptions: PHFetchOptions) -> Album? {
+    static func fetchAssets(forCollection collection: PHAssetCollection, fetchOptions: PHFetchOptions, loadPath: Bool) -> Album? {
         let assets = PHAsset.fetchAssets(in: collection, options: fetchOptions)
         var files = [MediaFile]()
         assets.enumerateObjects{asset, index, info in
-            if let mediaFile = getMediaFile(for: asset) {
+            if let mediaFile = getMediaFile(for: asset, loadPath: loadPath, generateThumbnailIfNotFound: false) {
                 files.append(mediaFile)
             } else {
                 print("File path not found for an item in \(String(describing: collection.localizedTitle))")
@@ -84,66 +84,77 @@ class FileFetcher {
         return nil
     }
     
-    private static func getMediaFile(for asset: PHAsset) -> MediaFile? {
+    static func getMediaFile(for asset: PHAsset, loadPath: Bool, generateThumbnailIfNotFound: Bool) -> MediaFile? {
         
         var mediaFile: MediaFile? = nil
         var url: String? = nil
+        var orientation: UIImage.Orientation? = nil
+        
+        var cachePath: URL? = getCachePath(for: asset.localIdentifier)
+        if !FileManager.default.fileExists(atPath: cachePath!.path) {
+            if generateThumbnailIfNotFound {
+                if !generateThumbnail(asset: asset, destination: cachePath!) {
+                    cachePath = nil
+                }
+            } else {
+                cachePath = nil
+            }
+        }
+        
         
         if (asset.mediaType ==  .image) {
-            let options = PHImageRequestOptions()
-            options.isSynchronous = true
-            options.isNetworkAccessAllowed = true
-            PHImageManager.default().requestImageData(for: asset, options: options) { (_, fileName, orientation, info) in
-                url = (info?["PHImageFileURLKey"] as? NSURL)?.path
-                
-                var cachePath: URL? = getCachePath(for: asset.localIdentifier)
-                if !FileManager.default.fileExists(atPath: cachePath!.path) {
-                    cachePath = nil
-                }
-                
-                if (url != nil) {
-                    let since1970 = asset.creationDate?.timeIntervalSince1970
-                    var dateAdded: Int? = nil
-                    if since1970 != nil {
-                        dateAdded = Int(since1970!)
-                    }
-                    mediaFile = MediaFile.init(
-                        id: asset.localIdentifier,
-                        dateAdded: dateAdded,
-                        path: url!,
-                        thumbnailPath: cachePath?.path,
-                        orientation: orientation.inDegrees(),
-                        type: .IMAGE)
+            
+            if loadPath {
+                let options = PHImageRequestOptions()
+                options.isSynchronous = true
+                options.isNetworkAccessAllowed = true
+                PHImageManager.default().requestImageData(for: asset, options: options) { (_, fileName, _orientation, info) in
+                    orientation = _orientation
+                    url = (info?["PHImageFileURLKey"] as? NSURL)?.path
                 }
             }
+            
+           
+            
+            let since1970 = asset.creationDate?.timeIntervalSince1970
+            var dateAdded: Int? = nil
+            if since1970 != nil {
+                dateAdded = Int(since1970!)
+            }
+            mediaFile = MediaFile.init(
+                id: asset.localIdentifier,
+                dateAdded: dateAdded,
+                path: url,
+                thumbnailPath: cachePath?.path,
+                orientation: orientation?.inDegrees() ?? 0,
+                type: .IMAGE)
+            
         } else if (asset.mediaType == .video) {
-            let semaphore = DispatchSemaphore(value: 0)
-            let options = PHVideoRequestOptions()
-            options.isNetworkAccessAllowed = true
-            PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { (avAsset, _, info) in
-                url = (avAsset as? AVURLAsset)?.url.path
-                var cachePath: URL? = getCachePath(for: asset.localIdentifier)
-                if !FileManager.default.fileExists(atPath: cachePath!.path) {
-                    cachePath = nil
+            
+            if loadPath {
+                let semaphore = DispatchSemaphore(value: 0)
+                let options = PHVideoRequestOptions()
+                options.isNetworkAccessAllowed = true
+                PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { (avAsset, _, info) in
+                    url = (avAsset as? AVURLAsset)?.url.path
+                    semaphore.signal()
                 }
-                
-                if (url != nil) {
-                    let since1970 = asset.creationDate?.timeIntervalSince1970
-                    var dateAdded: Int? = nil
-                    if since1970 != nil {
-                        dateAdded = Int(since1970!)
-                    }
-                    mediaFile = MediaFile.init(
-                        id: asset.localIdentifier,
-                        dateAdded: dateAdded,
-                        path: url!,
-                        thumbnailPath: cachePath?.path,
-                        orientation: 0,
-                        type: .VIDEO)
-                }
-                semaphore.signal()
+                semaphore.wait()
             }
-            semaphore.wait()
+            
+            let since1970 = asset.creationDate?.timeIntervalSince1970
+            var dateAdded: Int? = nil
+            if since1970 != nil {
+                dateAdded = Int(since1970!)
+            }
+            mediaFile = MediaFile.init(
+                id: asset.localIdentifier,
+                dateAdded: dateAdded,
+                path: url,
+                thumbnailPath: cachePath?.path,
+                orientation: 0,
+                type: .VIDEO)
+            
         }
         return mediaFile
     }
