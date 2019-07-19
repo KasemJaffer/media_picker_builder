@@ -1,3 +1,12 @@
+## 1.2.0
+
+iOS
+* Return video `duration` with `getMediaFile`
+* Duration can also be returned with `getAlbums` if the argument `loadIOSPath` is true
+
+Android
+* Return video `duration` and `mimeType` of files with `getMediaFile` and getAlbums
+
 ## 1.1.1
 
 * On iOS, fix crash when retrieving albums

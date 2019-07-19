@@ -16,7 +16,7 @@ class MediaPickerBuilder {
   /// If thumbnails returned are null you will have to call [getThumbnail]
   /// to generate one and return its path.
   /// [loadIOSPaths] For iOS only, to optimize the speed of querying the files you can set this to false,
-  /// but if you do that you will have to get the path after selection is done
+  /// but if you do that you will have to get the path & video duration after selection is done
   static Future<List<Album>> getAlbums({
     @required bool withImages,
     @required bool withVideos,
@@ -61,7 +61,8 @@ class MediaPickerBuilder {
   }
 
   /// Returns the [MediaFile] of a file by the unique identifier
-  /// [loadIOSPath] Whether or not to try and fetch path for iOS. Android always returns the path
+  /// [loadIOSPath] Whether or not to try and fetch path & video duration for iOS.
+  /// Android always returns the path & duration
   /// [loadThumbnail] Whether or not to generate a thumbnail
   static Future<MediaFile> getMediaFile({
     @required String fileId,

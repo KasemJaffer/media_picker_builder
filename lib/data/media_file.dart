@@ -26,6 +26,8 @@ class MediaFile {
 
   /// Video duration in milliseconds
   int duration;
+
+  /// Supported on Android only
   String mimeType;
   MediaType type;
 
