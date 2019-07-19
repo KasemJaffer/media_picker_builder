@@ -1,12 +1,32 @@
 package com.kasem.media_picker_builder
 
 import android.content.Context
+import android.database.Cursor
 import android.graphics.Bitmap
 import android.provider.MediaStore
 import org.json.JSONArray
+import java.io.File
 
 class FileFetcher {
     companion object {
+        private val imageMediaColumns = arrayOf(
+                MediaStore.Images.Media._ID,
+                MediaStore.Images.Media.DATE_ADDED,
+                MediaStore.Images.Media.DATA,
+                MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
+                MediaStore.Images.Media.BUCKET_ID,
+                MediaStore.Images.Media.ORIENTATION,
+                MediaStore.Images.Media.MIME_TYPE)
+
+        private val videoMediaColumns = arrayOf(
+                MediaStore.Video.Media._ID,
+                MediaStore.Video.Media.DATE_ADDED,
+                MediaStore.Video.Media.DATA,
+                MediaStore.Video.Media.BUCKET_DISPLAY_NAME,
+                MediaStore.Video.Media.BUCKET_ID,
+                MediaStore.Video.Media.MIME_TYPE,
+                MediaStore.Video.Media.DURATION)
+
         fun getAlbums(context: Context, withImages: Boolean, withVideos: Boolean): JSONArray {
             val albumHashMap: MutableMap<Long, Album> = LinkedHashMap()
 
@@ -33,58 +53,40 @@ class FileFetcher {
                 MediaFile.MediaType.IMAGE -> {
                     context.contentResolver.query(
                             MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                            arrayOf(
-                                    MediaStore.Images.Media._ID,
-                                    MediaStore.Images.Media.DATE_ADDED,
-                                    MediaStore.Images.Media.DATA,
-                                    MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
-                                    MediaStore.Images.Media.BUCKET_ID,
-                                    MediaStore.Images.Media.ORIENTATION),
+                            imageMediaColumns,
                             "${MediaStore.Images.Media._ID} = $fileId",
                             null,
                             null)?.use { cursor ->
 
                         if (cursor.count > 0) {
                             cursor.moveToFirst()
-                            val fileDateAdded = cursor.getLong(1)
-                            val filePath = cursor.getString(2)
-                            val orientation = cursor.getInt(5)
-
-                            mediaFile = MediaFile(
-                                    fileId,
-                                    fileDateAdded,
-                                    filePath,
-                                    if (loadThumbnail) getThumbnail(context, fileId, type) else null,
-                                    orientation,
-                                    type
-                            )
+                            mediaFile = getMediaFile(cursor, MediaFile.MediaType.IMAGE)
+                            if (mediaFile?.thumbnailPath != null && !File(mediaFile?.thumbnailPath).exists()) {
+                                mediaFile?.thumbnailPath = null
+                            }
+                            if (mediaFile?.thumbnailPath == null && loadThumbnail) {
+                                mediaFile?.thumbnailPath = getThumbnail(context, fileId, type)
+                            }
                         }
                     }
                 }
                 MediaFile.MediaType.VIDEO -> {
                     context.contentResolver.query(
                             MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                            arrayOf(
-                                    MediaStore.Video.Media._ID,
-                                    MediaStore.Video.Media.DATE_ADDED,
-                                    MediaStore.Video.Media.DATA,
-                                    MediaStore.Video.Media.BUCKET_DISPLAY_NAME,
-                                    MediaStore.Video.Media.BUCKET_ID),
+                            videoMediaColumns,
                             "${MediaStore.Video.Media._ID} = $fileId",
                             null,
                             null)?.use { cursor ->
 
-                        while (cursor.moveToNext()) {
-                            val fileDateAdded = cursor.getLong(1)
-                            val filePath = cursor.getString(2)
-                            mediaFile = MediaFile(
-                                    fileId,
-                                    fileDateAdded,
-                                    filePath,
-                                    if (loadThumbnail) getThumbnail(context, fileId, type) else null,
-                                    0,
-                                    type
-                            )
+                        if (cursor.count > 0) {
+                            cursor.moveToFirst()
+                            mediaFile = getMediaFile(cursor, MediaFile.MediaType.VIDEO)
+                            if (mediaFile?.thumbnailPath != null && !File(mediaFile?.thumbnailPath).exists()) {
+                                mediaFile?.thumbnailPath = null
+                            }
+                            if (mediaFile?.thumbnailPath == null && loadThumbnail) {
+                                mediaFile?.thumbnailPath = getThumbnail(context, fileId, type)
+                            }
                         }
                     }
 
@@ -96,51 +98,22 @@ class FileFetcher {
         private fun fetchImages(context: Context, albumHashMap: MutableMap<Long, Album>) {
             context.contentResolver.query(
                     MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                    arrayOf(
-                            MediaStore.Images.Media._ID,
-                            MediaStore.Images.Media.DATE_ADDED,
-                            MediaStore.Images.Media.DATA,
-                            MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
-                            MediaStore.Images.Media.BUCKET_ID,
-                            MediaStore.Images.Media.ORIENTATION)
+                    imageMediaColumns
                     , null,
                     null,
                     "${MediaStore.Images.Media._ID} DESC")?.use { cursor ->
 
                 while (cursor.moveToNext()) {
-                    val fileId = cursor.getLong(0)
-                    val fileDateAdded = cursor.getLong(1)
-                    val filePath = cursor.getString(2)
-                    val albumName = cursor.getString(3)
-                    val albumId = cursor.getLong(4)
-                    val orientation = cursor.getInt(5)
-                    val album = albumHashMap[albumId]
+                    val mediaFile = getMediaFile(cursor, MediaFile.MediaType.IMAGE)
+                    val album = albumHashMap[mediaFile.albumId]
                     if (album == null) {
-                        albumHashMap[albumId] = Album(
-                                albumId,
-                                albumName,
-                                mutableListOf(
-                                        MediaFile(
-                                                fileId,
-                                                fileDateAdded,
-                                                filePath,
-                                                null,
-                                                orientation,
-                                                MediaFile.MediaType.IMAGE
-                                        )
-                                )
+                        albumHashMap[mediaFile.albumId] = Album(
+                                mediaFile.albumId,
+                                mediaFile.albumName,
+                                mutableListOf(mediaFile)
                         )
                     } else {
-                        album.files.add(
-                                MediaFile(
-                                        fileId,
-                                        fileDateAdded,
-                                        filePath,
-                                        null,
-                                        orientation,
-                                        MediaFile.MediaType.IMAGE
-                                )
-                        )
+                        album.files.add(mediaFile)
                     }
                 }
             }
@@ -149,50 +122,73 @@ class FileFetcher {
         private fun fetchVideos(context: Context, albumHashMap: MutableMap<Long, Album>) {
             context.contentResolver.query(
                     MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                    arrayOf(
-                            MediaStore.Video.Media._ID,
-                            MediaStore.Video.Media.DATE_ADDED,
-                            MediaStore.Video.Media.DATA,
-                            MediaStore.Video.Media.BUCKET_DISPLAY_NAME,
-                            MediaStore.Video.Media.BUCKET_ID)
+                    videoMediaColumns
                     , null,
                     null,
                     "${MediaStore.Video.Media._ID} DESC")?.use { cursor ->
 
                 while (cursor.moveToNext()) {
+                    val mediaFile = getMediaFile(cursor, MediaFile.MediaType.VIDEO)
+                    val album = albumHashMap[mediaFile.albumId]
+                    if (album == null) {
+                        albumHashMap[mediaFile.albumId] = Album(
+                                mediaFile.albumId,
+                                mediaFile.albumName,
+                                mutableListOf(mediaFile)
+                        )
+                    } else {
+                        album.files.add(mediaFile)
+                    }
+                }
+            }
+        }
+
+        private fun getMediaFile(cursor: Cursor, type: MediaFile.MediaType): MediaFile {
+
+            when (type) {
+                MediaFile.MediaType.VIDEO -> {
                     val fileId = cursor.getLong(0)
                     val fileDateAdded = cursor.getLong(1)
                     val filePath = cursor.getString(2)
                     val albumName = cursor.getString(3)
                     val albumId = cursor.getLong(4)
-                    val album = albumHashMap[albumId]
-                    if (album == null) {
-                        albumHashMap[albumId] = Album(
-                                albumId,
-                                albumName,
-                                mutableListOf(
-                                        MediaFile(
-                                                fileId,
-                                                fileDateAdded,
-                                                filePath,
-                                                null,
-                                                0,
-                                                MediaFile.MediaType.VIDEO
-                                        )
-                                )
-                        )
-                    } else {
-                        album.files.add(
-                                MediaFile(
-                                        fileId,
-                                        fileDateAdded,
-                                        filePath,
-                                        null,
-                                        0,
-                                        MediaFile.MediaType.VIDEO
-                                )
-                        )
-                    }
+                    val mimeType = cursor.getString(5)
+                    val duration = cursor.getLong(6)
+
+                    return MediaFile(
+                            fileId,
+                            albumId,
+                            albumName,
+                            fileDateAdded,
+                            filePath,
+                            null,
+                            0,
+                            mimeType,
+                            duration,
+                            type
+                    )
+                }
+                MediaFile.MediaType.IMAGE -> {
+                    val fileId = cursor.getLong(0)
+                    val fileDateAdded = cursor.getLong(1)
+                    val filePath = cursor.getString(2)
+                    val albumName = cursor.getString(3)
+                    val albumId = cursor.getLong(4)
+                    val orientation = cursor.getInt(5)
+                    val mimeType = cursor.getString(6)
+
+                    return MediaFile(
+                            fileId,
+                            albumId,
+                            albumName,
+                            fileDateAdded,
+                            filePath,
+                            null,
+                            orientation,
+                            mimeType,
+                            null,
+                            type
+                    )
                 }
             }
         }
@@ -213,14 +209,20 @@ class FileFetcher {
                         null)?.use { cursor ->
                     while (cursor.moveToNext()) {
                         val fileId = cursor.getLong(0)
-                        val thumbnail = cursor.getString(1)
-                        for (album in albumHashMap.values) {
-                            val file = album.files.firstOrNull { it.id == fileId }
-                            if (file != null) {
-                                file.thumbnailPath = thumbnail
-                                break
+                        var thumbnail = cursor.getString(1)
+
+                        // Set the thumbnail to null if it doesn't exist
+                        if (!File(thumbnail).exists())
+                            thumbnail = null
+
+                        if (thumbnail != null)
+                            for (album in albumHashMap.values) {
+                                val file = album.files.firstOrNull { it.id == fileId }
+                                if (file != null) {
+                                    file.thumbnailPath = thumbnail
+                                    break
+                                }
                             }
-                        }
                     }
 
                 }
@@ -240,14 +242,20 @@ class FileFetcher {
                     val thumbnailPathColumn = cursor.getColumnIndex(MediaStore.Video.Thumbnails.DATA)
                     while (cursor.moveToNext()) {
                         val fileId = cursor.getLong(fileIdColumn)
-                        val thumbnail = cursor.getString(thumbnailPathColumn)
-                        for (album in albumHashMap.values) {
-                            val file = album.files.firstOrNull { it.id == fileId }
-                            if (file != null) {
-                                file.thumbnailPath = thumbnail
-                                break
+                        var thumbnail = cursor.getString(thumbnailPathColumn)
+
+                        // Set the thumbnail to null if it doesn't exist
+                        if (!File(thumbnail).exists())
+                            thumbnail = null
+
+                        if (thumbnail != null)
+                            for (album in albumHashMap.values) {
+                                val file = album.files.firstOrNull { it.id == fileId }
+                                if (file != null) {
+                                    file.thumbnailPath = thumbnail
+                                    break
+                                }
                             }
-                        }
                     }
                 }
         }

@@ -28,10 +28,12 @@ class FileFetcher {
         }
         
         topLevelUserCollections.enumerateObjects{(topLevelAlbumAsset, index, stop) in
-            let topLevelAlbum = topLevelAlbumAsset as! PHAssetCollection
-            let album = fetchAssets(forCollection: topLevelAlbum, fetchOptions: fetchOptions, loadPath: loadPaths)
-            if album != nil {
-                albums.append(album!)
+            if (topLevelAlbumAsset is PHAssetCollection) {
+                let topLevelAlbum = topLevelAlbumAsset as! PHAssetCollection
+                let album = fetchAssets(forCollection: topLevelAlbum, fetchOptions: fetchOptions, loadPath: loadPaths)
+                if album != nil {
+                    albums.append(album!)
+                }
             }
         }
         
@@ -88,6 +90,7 @@ class FileFetcher {
         
         var mediaFile: MediaFile? = nil
         var url: String? = nil
+        var duration: Double? = nil
         var orientation: UIImage.Orientation? = nil
         
         var cachePath: URL? = getCachePath(for: asset.localIdentifier)
@@ -114,7 +117,7 @@ class FileFetcher {
                 }
             }
             
-           
+            
             
             let since1970 = asset.creationDate?.timeIntervalSince1970
             var dateAdded: Int? = nil
@@ -127,6 +130,8 @@ class FileFetcher {
                 path: url,
                 thumbnailPath: cachePath?.path,
                 orientation: orientation?.inDegrees() ?? 0,
+                duration: nil,
+                mimeType: nil,
                 type: .IMAGE)
             
         } else if (asset.mediaType == .video) {
@@ -136,7 +141,12 @@ class FileFetcher {
                 let options = PHVideoRequestOptions()
                 options.isNetworkAccessAllowed = true
                 PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { (avAsset, _, info) in
-                    url = (avAsset as? AVURLAsset)?.url.path
+                    let avURLAsset = avAsset as? AVURLAsset
+                    url = avURLAsset?.url.path
+                    let durationTime = avAsset?.duration
+                    if durationTime != nil {
+                        duration = (CMTimeGetSeconds(durationTime!) * 1000).rounded()
+                    }
                     semaphore.signal()
                 }
                 semaphore.wait()
@@ -153,6 +163,8 @@ class FileFetcher {
                 path: url,
                 thumbnailPath: cachePath?.path,
                 orientation: 0,
+                duration: duration,
+                mimeType: nil,
                 type: .VIDEO)
             
         }

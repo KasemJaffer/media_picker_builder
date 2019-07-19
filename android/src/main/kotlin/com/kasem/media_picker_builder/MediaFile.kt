@@ -4,6 +4,8 @@ import org.json.JSONObject
 
 class MediaFile(
         var id: Long,
+        var albumId: Long,
+        var albumName: String,
         var dateAdded: Long,
         var path: String,
         var thumbnailPath: String?,
@@ -12,6 +14,12 @@ class MediaFile(
          * Only degrees 0, 90, 180, 270 will work.
          * */
         var orientation: Int,
+        var mimeType: String?,
+
+        /**
+         * Video duration in milliseconds
+         */
+        var duration: Long?,
         var type: MediaType) {
 
     fun toJSONObject(): JSONObject {
@@ -21,6 +29,8 @@ class MediaFile(
                 .put("path", path)
                 .put("thumbnailPath", thumbnailPath)
                 .put("orientation", orientation)
+                .put("mimeType", mimeType)
+                .put("duration", duration)
                 .put("type", type.ordinal)
     }
 

@@ -1,3 +1,7 @@
+## 1.1.1
+
+* On iOS, fix crash when retrieving albums
+
 ## 1.1.0+1
 
 * Added a new api to get media file based on file id

@@ -23,6 +23,10 @@ class MediaFile {
 
   /// Orientation in degrees (i.e. 0, 90, 180, 270)
   int orientation;
+
+  /// Video duration in milliseconds
+  int duration;
+  String mimeType;
   MediaType type;
 
   MediaFile(
@@ -39,6 +43,8 @@ class MediaFile {
         path = json['path'],
         thumbnailPath = json['thumbnailPath'],
         orientation = json['orientation'],
+        duration = json['duration'],
+        mimeType = json['mimeType'],
         type = MediaType.values[json['type']];
 
   @override
