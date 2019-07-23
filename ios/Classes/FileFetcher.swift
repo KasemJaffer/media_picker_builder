@@ -146,10 +146,16 @@ class FileFetcher {
                     let durationTime = avAsset?.duration
                     if durationTime != nil {
                         duration = (CMTimeGetSeconds(durationTime!) * 1000).rounded()
+                        UserDefaults.standard.set(duration, forKey: "duration-\(asset.localIdentifier)")
                     }
                     semaphore.signal()
                 }
                 semaphore.wait()
+            } else {
+                duration = UserDefaults.standard.double(forKey: "duration-\(asset.localIdentifier)")
+                if duration == 0 {
+                    duration = nil
+                }
             }
             
             let since1970 = asset.creationDate?.timeIntervalSince1970
