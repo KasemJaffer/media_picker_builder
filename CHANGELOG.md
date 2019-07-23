@@ -1,3 +1,7 @@
+## 1.2.0+1
+
+* Cache video duration for fast retrieval on iOS
+
 ## 1.2.0
 
 iOS
