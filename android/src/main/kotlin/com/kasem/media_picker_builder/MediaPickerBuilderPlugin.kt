@@ -1,6 +1,7 @@
 package com.kasem.media_picker_builder
 
 import android.content.Context
+import android.os.Handler
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
@@ -19,6 +20,8 @@ class MediaPickerBuilderPlugin(private val context: Context) : MethodCallHandler
     }
 
     private val executor: ExecutorService = Executors.newFixedThreadPool(1)
+    private val mainHandler by lazy { Handler(context.mainLooper) }
+
     override fun onMethodCall(call: MethodCall, result: Result) {
         when {
             call.method == "getAlbums" -> {
@@ -44,10 +47,12 @@ class MediaPickerBuilderPlugin(private val context: Context) : MethodCallHandler
                             fileId.toLong(),
                             MediaFile.MediaType.values()[type]
                     )
-                    if (thumbnail != null)
-                        result.success(thumbnail)
-                    else
-                        result.error("NOT_FOUND", "Unable to get the thumbnail", null)
+                    mainHandler.post {
+                        if (thumbnail != null)
+                            result.success(thumbnail)
+                        else
+                            result.error("NOT_FOUND", "Unable to get the thumbnail", null)
+                    }
                 }
             }
             call.method == "getMediaFile" -> {
@@ -65,15 +70,19 @@ class MediaPickerBuilderPlugin(private val context: Context) : MethodCallHandler
                     return
                 }
 
-                val mediaFile = FileFetcher.getMediaFile(
-                        context,
-                        fileId,
-                        MediaFile.MediaType.values()[type],
-                        loadThumbnail)
-                if (mediaFile != null)
-                    result.success(mediaFile.toJSONObject().toString())
-                else
-                    result.error("NOT_FOUND", "Unable to find the file", null)
+                executor.execute {
+                    val mediaFile = FileFetcher.getMediaFile(
+                            context,
+                            fileId,
+                            MediaFile.MediaType.values()[type],
+                            loadThumbnail)
+                    mainHandler.post {
+                        if (mediaFile != null)
+                            result.success(mediaFile.toJSONObject().toString())
+                        else
+                            result.error("NOT_FOUND", "Unable to find the file", null)
+                    }
+                }
             }
             else -> result.notImplemented()
         }
