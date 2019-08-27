@@ -1,3 +1,7 @@
+## 1.2.0+2
+
+* Fix crash on android when getting the thumbnail
+
 ## 1.2.0+1
 
 * Cache video duration for fast retrieval on iOS
