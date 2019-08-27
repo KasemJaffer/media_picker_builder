@@ -1,6 +1,7 @@
 package com.kasem.media_picker_builder
 
 import android.content.Context
+import android.os.Handler
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
@@ -44,10 +45,16 @@ class MediaPickerBuilderPlugin(private val context: Context) : MethodCallHandler
                             fileId.toLong(),
                             MediaFile.MediaType.values()[type]
                     )
-                    if (thumbnail != null)
-                        result.success(thumbnail)
-                    else
-                        result.error("NOT_FOUND", "Unable to get the thumbnail", null)
+                    val mainHandler: Handler = Handler(context.getMainLooper());
+                    val runnable: Runnable = object : Runnable {
+                        override fun run() {
+                            if (thumbnail != null)
+                                result.success(thumbnail)
+                            else
+                                result.error("NOT_FOUND", "Unable to get the thumbnail", null)
+                        }
+                    };
+                    mainHandler.post(runnable)
                 }
             }
             call.method == "getMediaFile" -> {
