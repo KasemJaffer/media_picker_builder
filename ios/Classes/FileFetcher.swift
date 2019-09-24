@@ -91,7 +91,7 @@ class FileFetcher {
         var mediaFile: MediaFile? = nil
         var url: String? = nil
         var duration: Double? = nil
-        var orientation: UIImage.Orientation? = nil
+        var orientation: Int = 0
         
         var cachePath: URL? = getCachePath(for: asset.localIdentifier)
         if !FileManager.default.fileExists(atPath: cachePath!.path) {
@@ -108,13 +108,12 @@ class FileFetcher {
         if (asset.mediaType ==  .image) {
             
             if loadPath {
-                let options = PHImageRequestOptions()
-                options.isSynchronous = true
-                options.isNetworkAccessAllowed = true
-                PHImageManager.default().requestImageData(for: asset, options: options) { (_, fileName, _orientation, info) in
-                    orientation = _orientation
-                    url = (info?["PHImageFileURLKey"] as? NSURL)?.path
-                }
+         
+                (url, orientation) = getFullSizeImageURLAndOrientation(for: asset)
+                
+                // Not working since iOS 13
+                // (url, orientation) = getPHImageFileURLKeyAndOrientation(for: asset)
+                
             }
             
             
@@ -129,7 +128,7 @@ class FileFetcher {
                 dateAdded: dateAdded,
                 path: url,
                 thumbnailPath: cachePath?.path,
-                orientation: orientation?.inDegrees() ?? 0,
+                orientation: orientation,
                 duration: nil,
                 mimeType: nil,
                 type: .IMAGE)
@@ -205,6 +204,38 @@ class FileFetcher {
             .url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
             .appendingPathComponent(fileName + ".png")
         return path
+    }
+    
+    private static func getFullSizeImageURLAndOrientation(for asset: PHAsset)-> (String?, Int) {
+        var url: String? = nil
+        var orientation: Int = 0
+        let group = DispatchGroup()
+        group.enter()
+        DispatchQueue.main.async {
+            let options2 = PHContentEditingInputRequestOptions()
+            options2.isNetworkAccessAllowed = true
+            asset.requestContentEditingInput(with: options2){(input, info) in
+                orientation = Int(input?.fullSizeImageOrientation ?? 0)
+                url = input?.fullSizeImageURL?.path
+                group.leave()
+            }
+        }
+        group.wait()
+        
+        return (url, orientation)
+    }
+    
+    private static func getPHImageFileURLKeyAndOrientation(for asset: PHAsset) -> (String?, Int) {
+        var url: String? = nil
+        var orientation: Int = 0
+        let options = PHImageRequestOptions()
+        options.isSynchronous = true
+        options.isNetworkAccessAllowed = true
+        PHImageManager.default().requestImageData(for: asset, options: options) { (_, fileName, _orientation, info) in
+            orientation = _orientation.inDegrees()
+            url = (info?["PHImageFileURLKey"] as? NSURL)?.path
+        }
+        return (url, orientation)
     }
 }
 

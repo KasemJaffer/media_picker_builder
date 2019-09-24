@@ -1,3 +1,7 @@
+## 1.2.1+3
+
+* Fix path is null on iOS 13 (simulator) because [PHImageFileURLKey] is not provided anymore
+
 ## 1.2.0+2
 
 * Fix crash on android when getting the thumbnail
