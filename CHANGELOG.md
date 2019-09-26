@@ -1,3 +1,7 @@
+## 1.2.1+4
+
+* Use DispatchSemaphore instead of DispatchGroup
+
 ## 1.2.1+3
 
 * Fix path is null on iOS 13 (simulator) because [PHImageFileURLKey] is not provided anymore
