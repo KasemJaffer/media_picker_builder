@@ -1,17 +1,18 @@
 package com.kasem.media_picker_builder
 
+import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
-import android.os.CancellationSignal
 import android.provider.MediaStore
 import android.util.Size
 import org.json.JSONArray
 import java.io.File
 import java.io.FileOutputStream
+import java.lang.Exception
 
 
 class FileFetcher {
@@ -314,38 +315,26 @@ class FileFetcher {
                 if (outputFile.exists()) return outputFile.path
 
                 // Generate thumbnail
-                when (type) {
+                val bitmap = when (type) {
                     MediaFile.MediaType.IMAGE -> {
                         val uri = Uri.parse("${MediaStore.Images.Media.EXTERNAL_CONTENT_URI}/$fileId")
-                        val bitmap = context.contentResolver.loadThumbnail(uri, Size(90, 90), null) // TODO: handle cancelling
-                        // Save thumbnail
-                        FileOutputStream(outputFile).use { out ->
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
-                        }
-
-                        // Insert thumbnail path to the thumbnail media store
-                        val values = ContentValues()
-                        values.put(MediaStore.Images.Thumbnails.IMAGE_ID, fileId)
-                        values.put(MediaStore.Images.Thumbnails.DATA, outputFile.path)
-                        values.put(MediaStore.Images.Thumbnails.KIND, MediaStore.Images.Thumbnails.MINI_KIND)
-                        context.contentResolver.insert(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, values)
+                        context.contentResolver.loadThumbnail(uri, Size(90, 90), null) // TODO: handle cancelling
                     }
                     MediaFile.MediaType.VIDEO -> {
                         val uri = Uri.parse("${MediaStore.Video.Media.EXTERNAL_CONTENT_URI}/$fileId")
-                        val bitmap = context.contentResolver.loadThumbnail(uri, Size(270, 270), null) // TODO: handle cancelling
-                        // Save thumbnail
-                        FileOutputStream(outputFile).use { out ->
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
-                        }
-
-                        // Insert thumbnail path to the thumbnail media store
-                        val values = ContentValues()
-                        values.put(MediaStore.Video.Thumbnails.VIDEO_ID, fileId)
-                        values.put(MediaStore.Video.Thumbnails.DATA, outputFile.path)
-                        values.put(MediaStore.Video.Thumbnails.KIND, MediaStore.Video.Thumbnails.MINI_KIND)
-                        context.contentResolver.insert(MediaStore.Video.Thumbnails.EXTERNAL_CONTENT_URI, values)
+                        context.contentResolver.loadThumbnail(uri, Size(270, 270), null) // TODO: handle cancelling
                     }
                 }
+
+                // Save thumbnail
+                FileOutputStream(outputFile).use { out ->
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
+                }
+
+                bitmap.recycle()
+
+                // Insert thumbnail path to the thumbnail media store
+                updateThumbnailMediaStore(context, fileId, type, outputFile)
 
                 return outputFile.path
             } else {
@@ -365,6 +354,42 @@ class FileFetcher {
                 bitmap.recycle()
                 return null
             }
+        }
+
+        private fun updateThumbnailMediaStore(context: Context, fileId: Long, type: MediaFile.MediaType, outputFile: File) {
+            when (type) {
+                MediaFile.MediaType.IMAGE -> {
+                    val values = ContentValues()
+                    values.put(MediaStore.Images.Thumbnails.DATA, outputFile.path)
+                    try {
+                        values.put(MediaStore.Images.Thumbnails.IMAGE_ID, fileId)
+                        values.put(MediaStore.Images.Thumbnails.KIND, MediaStore.Images.Thumbnails.MINI_KIND)
+                        context.contentResolver.insert(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, values)
+                    } catch (e: Exception) {
+                        context.contentResolver.update(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, values,
+                                "${MediaStore.Images.Thumbnails.IMAGE_ID} = $fileId AND " +
+                                        "${MediaStore.Images.Thumbnails.KIND} = ${MediaStore.Images.Thumbnails.MINI_KIND}",
+                                null)
+                    }
+                }
+                MediaFile.MediaType.VIDEO -> {
+                    val values = ContentValues()
+                    values.put(MediaStore.Video.Thumbnails.DATA, outputFile.path)
+                    try {
+                        values.put(MediaStore.Video.Thumbnails.VIDEO_ID, fileId)
+                        values.put(MediaStore.Video.Thumbnails.KIND, MediaStore.Video.Thumbnails.MINI_KIND)
+                        context.contentResolver.insert(MediaStore.Video.Thumbnails.EXTERNAL_CONTENT_URI, values)
+                    } catch (e: Exception) {
+                        context.contentResolver.update(MediaStore.Video.Thumbnails.EXTERNAL_CONTENT_URI, values,
+                                "${MediaStore.Video.Thumbnails.VIDEO_ID} = $fileId AND " +
+                                        "${MediaStore.Video.Thumbnails.KIND} = ${MediaStore.Video.Thumbnails.MINI_KIND}",
+                                null
+                        )
+                    }
+                }
+
+            }
+
         }
 
     }

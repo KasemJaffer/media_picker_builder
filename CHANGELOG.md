@@ -1,3 +1,7 @@
+## 1.2.2
+
+* Fix thumbnails not loading on android 10
+
 ## 1.2.1+4
 
 * Use DispatchSemaphore instead of DispatchGroup
