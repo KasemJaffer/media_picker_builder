@@ -1,11 +1,18 @@
 package com.kasem.media_picker_builder
 
+import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.graphics.Bitmap
+import android.net.Uri
+import android.os.Build
+import android.os.CancellationSignal
 import android.provider.MediaStore
+import android.util.Size
 import org.json.JSONArray
 import java.io.File
+import java.io.FileOutputStream
+
 
 class FileFetcher {
     companion object {
@@ -144,16 +151,15 @@ class FileFetcher {
         }
 
         private fun getMediaFile(cursor: Cursor, type: MediaFile.MediaType): MediaFile {
-
             when (type) {
                 MediaFile.MediaType.VIDEO -> {
-                    val fileId = cursor.getLong(0)
-                    val fileDateAdded = cursor.getLong(1)
-                    val filePath = cursor.getString(2)
-                    val albumName = cursor.getString(3)
-                    val albumId = cursor.getLong(4)
-                    val mimeType = cursor.getString(5)
-                    val duration = cursor.getLong(6)
+                    val fileId = cursor.getLong(0)          //MediaStore.Video.Media._ID
+                    val fileDateAdded = cursor.getLong(1)   //MediaStore.Video.Media.DATE_ADDED
+                    val filePath = cursor.getString(2)      //MediaStore.Video.Media.DATA
+                    val albumName = cursor.getString(3)     //MediaStore.Video.Media.BUCKET_DISPLAY_NAME
+                    val albumId = cursor.getLong(4)         //MediaStore.Video.Media.BUCKET_ID
+                    val mimeType = cursor.getString(5)      //MediaStore.Video.Media.MIME_TYPE
+                    val duration = cursor.getLong(6)        //MediaStore.Video.Media.DURATION
 
                     return MediaFile(
                             fileId,
@@ -169,13 +175,13 @@ class FileFetcher {
                     )
                 }
                 MediaFile.MediaType.IMAGE -> {
-                    val fileId = cursor.getLong(0)
-                    val fileDateAdded = cursor.getLong(1)
-                    val filePath = cursor.getString(2)
-                    val albumName = cursor.getString(3)
-                    val albumId = cursor.getLong(4)
-                    val orientation = cursor.getInt(5)
-                    val mimeType = cursor.getString(6)
+                    val fileId = cursor.getLong(0)          //MediaStore.Images.Media._ID
+                    val fileDateAdded = cursor.getLong(1)   //MediaStore.Images.Media.DATE_ADDED
+                    val filePath = cursor.getString(2)      //MediaStore.Images.Media.DATA
+                    val albumName = cursor.getString(3)     //MediaStore.Images.Media.BUCKET_DISPLAY_NAME
+                    val albumId = cursor.getLong(4)         //MediaStore.Images.Media.BUCKET_ID
+                    val orientation = cursor.getInt(5)      //MediaStore.Images.Media.ORIENTATION
+                    val mimeType = cursor.getString(6)      //MediaStore.Images.Media.MIME_TYPE
 
                     return MediaFile(
                             fileId,
@@ -197,6 +203,7 @@ class FileFetcher {
                                     albumHashMap: MutableMap<Long, Album>,
                                     withImages: Boolean,
                                     withVideos: Boolean) {
+
             if (withImages)
                 context.contentResolver.query(
                         MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI,
@@ -261,8 +268,9 @@ class FileFetcher {
         }
 
         fun getThumbnail(context: Context, fileId: Long, type: MediaFile.MediaType): String? {
-            generateThumbnail(context, fileId, type)
-            var path: String? = null
+            var path = generateThumbnail(context, fileId, type)
+            if (path != null) return path
+
             when (type) {
                 MediaFile.MediaType.IMAGE -> {
                     context.contentResolver.query(
@@ -296,21 +304,68 @@ class FileFetcher {
             return path
         }
 
-        private fun generateThumbnail(context: Context, fileId: Long, type: MediaFile.MediaType) {
-            val bitmap: Bitmap? = when (type) {
-                MediaFile.MediaType.IMAGE -> {
-                    MediaStore.Images.Thumbnails.getThumbnail(
-                            context.contentResolver, fileId,
-                            MediaStore.Images.Thumbnails.MINI_KIND, null)
+        private fun generateThumbnail(context: Context, fileId: Long, type: MediaFile.MediaType): String? {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val dir = File(context.externalCacheDir, ".thumbnails")
+                if (!dir.exists()) {
+                    dir.mkdirs()
                 }
-                MediaFile.MediaType.VIDEO -> {
-                    MediaStore.Video.Thumbnails.getThumbnail(
-                            context.contentResolver, fileId,
-                            MediaStore.Video.Thumbnails.MINI_KIND, null)
+                val outputFile = File(dir, "$fileId.jpg")
+                if (outputFile.exists()) return outputFile.path
 
+                // Generate thumbnail
+                when (type) {
+                    MediaFile.MediaType.IMAGE -> {
+                        val uri = Uri.parse("${MediaStore.Images.Media.EXTERNAL_CONTENT_URI}/$fileId")
+                        val bitmap = context.contentResolver.loadThumbnail(uri, Size(90, 90), null) // TODO: handle cancelling
+                        // Save thumbnail
+                        FileOutputStream(outputFile).use { out ->
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
+                        }
+
+                        // Insert thumbnail path to the thumbnail media store
+                        val values = ContentValues()
+                        values.put(MediaStore.Images.Thumbnails.IMAGE_ID, fileId)
+                        values.put(MediaStore.Images.Thumbnails.DATA, outputFile.path)
+                        values.put(MediaStore.Images.Thumbnails.KIND, MediaStore.Images.Thumbnails.MINI_KIND)
+                        context.contentResolver.insert(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, values)
+                    }
+                    MediaFile.MediaType.VIDEO -> {
+                        val uri = Uri.parse("${MediaStore.Video.Media.EXTERNAL_CONTENT_URI}/$fileId")
+                        val bitmap = context.contentResolver.loadThumbnail(uri, Size(270, 270), null) // TODO: handle cancelling
+                        // Save thumbnail
+                        FileOutputStream(outputFile).use { out ->
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
+                        }
+
+                        // Insert thumbnail path to the thumbnail media store
+                        val values = ContentValues()
+                        values.put(MediaStore.Video.Thumbnails.VIDEO_ID, fileId)
+                        values.put(MediaStore.Video.Thumbnails.DATA, outputFile.path)
+                        values.put(MediaStore.Video.Thumbnails.KIND, MediaStore.Video.Thumbnails.MINI_KIND)
+                        context.contentResolver.insert(MediaStore.Video.Thumbnails.EXTERNAL_CONTENT_URI, values)
+                    }
                 }
+
+                return outputFile.path
+            } else {
+                val bitmap = when (type) {
+                    MediaFile.MediaType.IMAGE -> {
+                        MediaStore.Images.Thumbnails.getThumbnail(
+                                context.contentResolver, fileId,
+                                MediaStore.Images.Thumbnails.MINI_KIND, null)
+                    }
+                    MediaFile.MediaType.VIDEO -> {
+                        MediaStore.Video.Thumbnails.getThumbnail(
+                                context.contentResolver, fileId,
+                                MediaStore.Video.Thumbnails.MINI_KIND, null)
+
+                    }
+                }
+                bitmap.recycle()
+                return null
             }
-            bitmap?.recycle()
         }
+
     }
 }
