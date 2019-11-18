@@ -68,15 +68,15 @@ class FileFetcher {
     }
     
     static func getThumbnail(for fileId: String, type: MediaType) -> String? {
-        let cachePath = getCachePath(for: fileId)
-        if FileManager.default.fileExists(atPath: cachePath.path) {
-            return cachePath.path
-        }
-        
-        
         let asset = PHAsset.fetchAssets(withLocalIdentifiers: [fileId], options: .none).firstObject
         if asset == nil {
             return nil
+        }
+        
+        let modificationDate = Int((asset!.value(forKey: "modificationDate") as! Date).timeIntervalSince1970)
+        let cachePath = getCachePath(for: fileId, modificationDate: modificationDate)
+        if FileManager.default.fileExists(atPath: cachePath.path) {
+            return cachePath.path
         }
         
         if generateThumbnail(asset: asset!, destination: cachePath) {
@@ -93,7 +93,8 @@ class FileFetcher {
         var duration: Double? = nil
         var orientation: Int = 0
         
-        var cachePath: URL? = getCachePath(for: asset.localIdentifier)
+        let modificationDate = Int((asset.value(forKey: "modificationDate") as! Date).timeIntervalSince1970)
+        var cachePath: URL? = getCachePath(for: asset.localIdentifier, modificationDate: modificationDate)
         if !FileManager.default.fileExists(atPath: cachePath!.path) {
             if generateThumbnailIfNotFound {
                 if !generateThumbnail(asset: asset, destination: cachePath!) {
@@ -103,7 +104,6 @@ class FileFetcher {
                 cachePath = nil
             }
         }
-        
         
         if (asset.mediaType ==  .image) {
             
@@ -198,11 +198,11 @@ class FileFetcher {
         return saved
     }
     
-    private static func getCachePath(for identifier: String) -> URL {
+    private static func getCachePath(for identifier: String, modificationDate: Int) -> URL {
         let fileName = Data(identifier.utf8).base64EncodedString().replacingOccurrences(of: "==", with: "")
         let path = try! FileManager.default
             .url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-            .appendingPathComponent(fileName + ".png")
+            .appendingPathComponent("\(fileName)-\(modificationDate).png")
         return path
     }
     

@@ -1,3 +1,7 @@
+## 1.2.4
+
+* Fix old thumbnail of edited photos and videos
+
 ## 1.2.3
 
 * Fix crash when generating thumbnail for unsupported photos or videos on Android
