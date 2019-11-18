@@ -1,3 +1,7 @@
+## 1.2.3
+
+* Fix crash when generating thumbnail for unsupported photos or videos on Android
+
 ## 1.2.2
 
 * Fix thumbnails not loading on android 10

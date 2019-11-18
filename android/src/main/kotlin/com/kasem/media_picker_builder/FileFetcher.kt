@@ -55,6 +55,7 @@ class FileFetcher {
             return JSONArray(albumHashMap.values.map { it.toJSONObject() })
         }
 
+        @Throws(Exception::class)
         fun getMediaFile(context: Context, fileId: Long, type: MediaFile.MediaType, loadThumbnail: Boolean): MediaFile? {
             var mediaFile: MediaFile? = null
             when (type) {
@@ -268,6 +269,7 @@ class FileFetcher {
                 }
         }
 
+        @Throws(Exception::class)
         fun getThumbnail(context: Context, fileId: Long, type: MediaFile.MediaType): String? {
             var path = generateThumbnail(context, fileId, type)
             if (path != null) return path
@@ -305,6 +307,7 @@ class FileFetcher {
             return path
         }
 
+        @Throws(Exception::class)
         private fun generateThumbnail(context: Context, fileId: Long, type: MediaFile.MediaType): String? {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val dir = File(context.externalCacheDir, ".thumbnails")
@@ -350,7 +353,8 @@ class FileFetcher {
                                 MediaStore.Video.Thumbnails.MINI_KIND, null)
 
                     }
-                }
+                } ?: throw Exception("Unable to generate thumbnail")
+
                 bitmap.recycle()
                 return null
             }

@@ -2,11 +2,13 @@ package com.kasem.media_picker_builder
 
 import android.content.Context
 import android.os.Handler
+import android.util.Log
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
+import java.lang.Exception
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -42,16 +44,23 @@ class MediaPickerBuilderPlugin(private val context: Context) : MethodCallHandler
                     return
                 }
                 executor.execute {
-                    val thumbnail = FileFetcher.getThumbnail(
-                            context,
-                            fileId.toLong(),
-                            MediaFile.MediaType.values()[type]
-                    )
-                    mainHandler.post {
-                        if (thumbnail != null)
-                            result.success(thumbnail)
-                        else
-                            result.error("NOT_FOUND", "Unable to get the thumbnail", null)
+                    try {
+                        val thumbnail = FileFetcher.getThumbnail(
+                                context,
+                                fileId.toLong(),
+                                MediaFile.MediaType.values()[type]
+                        )
+                        mainHandler.post {
+                            if (thumbnail != null)
+                                result.success(thumbnail)
+                            else
+                                result.error("NOT_FOUND", "Unable to get the thumbnail", null)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MediaPickerBuilder", e.message.toString())
+                        mainHandler.post {
+                            result.error("GENERATE_THUMBNAIL_FAILED", "Unable to generate thumbnail ${e.message}", null)
+                        }
                     }
                 }
             }
@@ -71,16 +80,23 @@ class MediaPickerBuilderPlugin(private val context: Context) : MethodCallHandler
                 }
 
                 executor.execute {
-                    val mediaFile = FileFetcher.getMediaFile(
-                            context,
-                            fileId,
-                            MediaFile.MediaType.values()[type],
-                            loadThumbnail)
-                    mainHandler.post {
-                        if (mediaFile != null)
-                            result.success(mediaFile.toJSONObject().toString())
-                        else
-                            result.error("NOT_FOUND", "Unable to find the file", null)
+                    try {
+                        val mediaFile = FileFetcher.getMediaFile(
+                                context,
+                                fileId,
+                                MediaFile.MediaType.values()[type],
+                                loadThumbnail)
+                        mainHandler.post {
+                            if (mediaFile != null)
+                                result.success(mediaFile.toJSONObject().toString())
+                            else
+                                result.error("NOT_FOUND", "Unable to find the file", null)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MediaPickerBuilder", e.message.toString())
+                        mainHandler.post {
+                            result.error("GENERATE_THUMBNAIL_FAILED", "Unable to generate thumbnail ${e.message}", null)
+                        }
                     }
                 }
             }
