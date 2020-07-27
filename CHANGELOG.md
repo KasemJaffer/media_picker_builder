@@ -1,3 +1,7 @@
+## 1.2.5
+
+* Fix unable to get path of slow motion videos
+
 ## 1.2.4
 
 * Fix old thumbnail of edited photos and videos

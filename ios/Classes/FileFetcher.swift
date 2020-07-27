@@ -110,14 +110,14 @@ class FileFetcher {
             if loadPath {
          
                 (url, orientation) = getFullSizeImageURLAndOrientation(for: asset)
-                
+
                 // Not working since iOS 13
                 // (url, orientation) = getPHImageFileURLKeyAndOrientation(for: asset)
-                
+
             }
-            
-            
-            
+
+
+
             let since1970 = asset.creationDate?.timeIntervalSince1970
             var dateAdded: Int? = nil
             if since1970 != nil {
@@ -132,14 +132,18 @@ class FileFetcher {
                 duration: nil,
                 mimeType: nil,
                 type: .IMAGE)
-            
+
         } else if (asset.mediaType == .video) {
-            
+
             if loadPath {
                 let semaphore = DispatchSemaphore(value: 0)
                 let options = PHVideoRequestOptions()
                 options.isNetworkAccessAllowed = true
-                PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { (avAsset, _, info) in
+                PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { (avAssetData, _, info) in
+                    var avAsset = avAssetData
+                    if avAssetData is AVComposition {
+                        avAsset = convertAvcompositionToAvasset(avComp: (avAssetData as? AVComposition)!)
+                    }
                     let avURLAsset = avAsset as? AVURLAsset
                     url = avURLAsset?.url.path
                     let durationTime = avAsset?.duration
@@ -156,7 +160,7 @@ class FileFetcher {
                     duration = nil
                 }
             }
-            
+
             let since1970 = asset.creationDate?.timeIntervalSince1970
             var dateAdded: Int? = nil
             if since1970 != nil {
@@ -171,13 +175,13 @@ class FileFetcher {
                 duration: duration,
                 mimeType: nil,
                 type: .VIDEO)
-            
+
         }
         return mediaFile
     }
-    
+
     private static func generateThumbnail(asset: PHAsset, destination: URL) -> Bool {
-        
+
         let scale = UIScreen.main.scale
         let imageSize = CGSize(width: 79 * scale, height: 79 * scale)
         let imageContentMode: PHImageContentMode = .aspectFill
@@ -193,11 +197,11 @@ class FileFetcher {
                 print(error)
                 saved = false
             }
-            
+
         }
         return saved
     }
-    
+
     private static func getCachePath(for identifier: String, modificationDate: Int) -> URL {
         let fileName = Data(identifier.utf8).base64EncodedString().replacingOccurrences(of: "==", with: "")
         let path = try! FileManager.default
@@ -205,7 +209,7 @@ class FileFetcher {
             .appendingPathComponent("\(fileName)-\(modificationDate).png")
         return path
     }
-    
+
     private static func getFullSizeImageURLAndOrientation(for asset: PHAsset)-> (String?, Int) {
         var url: String? = nil
         var orientation: Int = 0
@@ -218,10 +222,10 @@ class FileFetcher {
             semaphore.signal()
         }
         semaphore.wait()
-        
+
         return (url, orientation)
     }
-    
+
     private static func getPHImageFileURLKeyAndOrientation(for asset: PHAsset) -> (String?, Int) {
         var url: String? = nil
         var orientation: Int = 0
@@ -233,6 +237,28 @@ class FileFetcher {
             url = (info?["PHImageFileURLKey"] as? NSURL)?.path
         }
         return (url, orientation)
+    }
+
+    private static func convertAvcompositionToAvasset(avComp: AVComposition) -> AVAsset? {
+        let exporter = AVAssetExportSession(asset: avComp, presetName: AVAssetExportPresetHighestQuality)
+        let randNum:Int = Int(arc4random())
+        //Generating Export Path
+        let exportPath: NSString = NSTemporaryDirectory().appendingFormat("\(randNum)"+"video.mov") as NSString
+        let exportUrl: NSURL = NSURL.fileURL(withPath: exportPath as String) as NSURL
+        //SettingUp Export Path as URL
+        exporter?.outputURL = exportUrl as URL
+        exporter?.outputFileType = AVFileType.mov
+        var avAsset: AVAsset?
+        let semaphore = DispatchSemaphore(value: 0)
+        exporter?.exportAsynchronously(completionHandler: {() -> Void in
+            if exporter?.status == .completed {
+                let url = exporter?.outputURL
+                avAsset = AVAsset(url: url!)
+            }
+            semaphore.signal()
+        })
+        semaphore.wait()
+        return avAsset
     }
 }
 
