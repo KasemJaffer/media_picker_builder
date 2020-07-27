@@ -1,15 +1,16 @@
 name: media_picker_builder
 description: A Flutter plugin that returns multimedia picker data such as folders and its content path list to build your own custom flutter picker
 version: 1.2.5
-author: Kasem SAEED<kasem.jaffer@gmail.com>
 homepage: https://github.com/KasemJaffer/media_picker_builder
 
 environment:
   sdk: ">=2.1.0 <3.0.0"
+  flutter: ">=1.10.0 <2.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
+  meta: ^1.1.8
 
 dev_dependencies:
   flutter_test:
@@ -25,8 +26,12 @@ flutter:
   # be modified. They are used by the tooling to maintain consistency when
   # adding or updating assets for this project.
   plugin:
-    androidPackage: com.kasem.media_picker_builder
-    pluginClass: MediaPickerBuilderPlugin
+    platforms:
+      android:
+        package: com.kasem.media_picker_builder
+        pluginClass: MediaPickerBuilderPlugin
+      ios:
+        pluginClass: MediaPickerBuilderPlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
