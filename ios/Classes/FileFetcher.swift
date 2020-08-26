@@ -7,6 +7,7 @@
 
 import Foundation
 import Photos
+import UIKit
 
 class FileFetcher {
     static func getAlbums(withImages: Bool, withVideos: Bool, loadPaths: Bool)-> [Album] {
@@ -191,7 +192,7 @@ class FileFetcher {
         var saved = false
         PHCachingImageManager.default().requestImage(for: asset, targetSize: imageSize, contentMode: imageContentMode, options: options) { (image, info) in
             do {
-                try UIImagePNGRepresentation(image!)?.write(to: destination)
+                try image!.pngData()?.write(to: destination)
                 saved = true
             } catch (let error) {
                 print(error)
@@ -262,9 +263,9 @@ class FileFetcher {
     }
 }
 
-extension UIImageOrientation{
+extension UIImage.Orientation {
     func inDegrees() -> Int {
-        switch  self {
+        switch self {
         case .down:
             return 180
         case .downMirrored:
@@ -281,6 +282,8 @@ extension UIImageOrientation{
             return 0
         case .upMirrored:
             return 0
+        @unknown default:
+            fatalError("Unknown Case")
         }
     }
 }
