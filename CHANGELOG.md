@@ -1,3 +1,7 @@
+## 1.3.0
+
+* Added support for retrieving the original file name
+
 ## 1.2.5
 
 * Fix unable to get path of slow motion videos

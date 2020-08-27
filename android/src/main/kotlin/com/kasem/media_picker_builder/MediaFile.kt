@@ -20,6 +20,7 @@ class MediaFile(
          * Video duration in milliseconds
          */
         var duration: Long?,
+        var fileName: String?,
         var type: MediaType) {
 
     fun toJSONObject(): JSONObject {
@@ -31,6 +32,7 @@ class MediaFile(
                 .put("orientation", orientation)
                 .put("mimeType", mimeType)
                 .put("duration", duration)
+                .put("fileName", fileName)
                 .put("type", type.ordinal)
     }
 

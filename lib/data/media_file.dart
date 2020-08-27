@@ -29,6 +29,10 @@ class MediaFile {
 
   /// Supported on Android only
   String mimeType;
+
+  /// On iOS, original file name is retrieved only if [loadIOSPath] is true
+  String fileName;
+
   MediaType type;
 
   MediaFile(
@@ -47,6 +51,7 @@ class MediaFile {
         orientation = json['orientation'],
         duration = json['duration'],
         mimeType = json['mimeType'],
+        fileName = json['fileName'],
         type = MediaType.values[json['type']];
 
   @override
