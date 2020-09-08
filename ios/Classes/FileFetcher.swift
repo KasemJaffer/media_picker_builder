@@ -223,7 +223,8 @@ class FileFetcher {
     private static func getFullSizeImageURLAndOrientation(for asset: PHAsset)-> (String?, Int, String?) {
         var fileName: String? = nil
         if #available(iOS 9, *) {
-            fileName = PHAssetResource.assetResources(for: asset).first?.originalFilename
+            let assetResources = PHAssetResource.assetResources(for: asset)
+            fileName = assetResources.first(where: {$0.type == .photo})?.originalFilename
         }
         
         var url: URL? = nil
