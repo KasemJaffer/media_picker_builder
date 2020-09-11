@@ -166,7 +166,7 @@ class FileFetcher {
                     return MediaFile(
                             fileId,
                             albumId,
-                            albumName,
+                            "", //Passign empty string, because real `albumName` was problematic under certain circumstances
                             fileDateAdded,
                             filePath,
                             null,
@@ -188,7 +188,7 @@ class FileFetcher {
                     return MediaFile(
                             fileId,
                             albumId,
-                            albumName,
+                            "", //Passign empty string, because real `albumName` was problematic under certain circumstances
                             fileDateAdded,
                             filePath,
                             null,
