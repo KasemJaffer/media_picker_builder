@@ -7,6 +7,7 @@
 
 import Foundation
 import Photos
+import MobileCoreServices
 
 class FileFetcher {
     static func getAlbums(withImages: Bool, withVideos: Bool, loadPaths: Bool)-> [Album] {
@@ -79,8 +80,12 @@ class FileFetcher {
             return cachePath.path
         }
         
-        if generateThumbnail(asset: asset!, destination: cachePath) {
-            return cachePath.path
+        do {
+            if try generateThumbnail(asset: asset!, destination: cachePath) {
+                return cachePath.path
+            }
+        } catch {
+            print(error)
         }
         
         return nil
@@ -98,8 +103,12 @@ class FileFetcher {
         var cachePath: URL? = getCachePath(for: asset.localIdentifier, modificationDate: modificationDate)
         if !FileManager.default.fileExists(atPath: cachePath!.path) {
             if generateThumbnailIfNotFound {
-                if !generateThumbnail(asset: asset, destination: cachePath!) {
-                    cachePath = nil
+                do {
+                    if try !generateThumbnail(asset: asset, destination: cachePath!) {
+                        cachePath = nil
+                    }
+                } catch {
+                    print(error)
                 }
             } else {
                 cachePath = nil
@@ -190,26 +199,63 @@ class FileFetcher {
         return mediaFile
     }
     
-    private static func generateThumbnail(asset: PHAsset, destination: URL) -> Bool {
-        
+    private static func generateThumbnail(asset: PHAsset, destination: URL) throws -> Bool {
         let scale = UIScreen.main.scale
         let imageSize = CGSize(width: 79 * scale, height: 79 * scale)
         let imageContentMode: PHImageContentMode = .aspectFill
         let options = PHImageRequestOptions()
         options.isSynchronous = true
         options.isNetworkAccessAllowed = true
+        options.resizeMode = .fast
         var saved = false
+
         PHCachingImageManager.default().requestImage(for: asset, targetSize: imageSize, contentMode: imageContentMode, options: options) { (image, info) in
-            do {
-                try UIImagePNGRepresentation(image!)?.write(to: destination)
-                saved = true
-            } catch (let error) {
-                print(error)
-                saved = false
+            if(image != nil) {
+                if let imageRep = UIImagePNGRepresentation(image!) {
+                    do {
+                        try imageRep.write(to: destination)
+                        saved = true
+                    } catch {
+                        print(error)
+                        saved = false
+                    }
+                }
             }
-            
         }
         return saved
+    }
+    
+    private static func generateThumbnail2(asset: PHAsset, destination: URL) throws -> Bool {
+        let options = PHImageRequestOptions()
+        options.isSynchronous = true
+        options.isNetworkAccessAllowed = true
+        options.resizeMode = .fast
+        var saved = false;
+        PHImageManager.default().requestImageData(for: asset, options: options, resultHandler:{ (data, responseString, imageOriet, info) -> Void in
+            
+            let imageData: NSData = data! as NSData
+            // create an image source ref
+            if let source = CGImageSourceCreateWithData(imageData as CFData, nil) {
+                // get image properties
+                if let sourceProperties = CGImageSourceCopyProperties(source, nil) {
+                    // create a new data object and write the new image into it
+                    if let destination = CGImageDestinationCreateWithURL(destination as CFURL, kUTTypePNG, 1, nil) {
+                        let resizeOptions = [
+                            kCGImageSourceThumbnailMaxPixelSize: 140,
+                            kCGImageSourceCreateThumbnailFromImageAlways: true,
+                            kCGImageSourceCreateThumbnailWithTransform: true
+                            ] as CFDictionary
+                        
+                        if let thumbnailImage = CGImageSourceCreateThumbnailAtIndex(source, 0, resizeOptions) {
+                            // add the image contained in the image source to the destination, overidding the old metadata with our modified metadata
+                            CGImageDestinationAddImage(destination, thumbnailImage, sourceProperties)
+                            saved = CGImageDestinationFinalize(destination)
+                        }
+                    }
+                }
+            }
+        })
+        return saved;
     }
     
     private static func getCachePath(for identifier: String, modificationDate: Int) -> URL {

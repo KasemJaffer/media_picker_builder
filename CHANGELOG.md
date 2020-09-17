@@ -1,3 +1,7 @@
+## 1.3.2
+
+* Generate thumbnails faster and prevent crashing
+
 ## 1.3.1
 
 * Fix incorrect file name when the file is Live Photo on iOS
