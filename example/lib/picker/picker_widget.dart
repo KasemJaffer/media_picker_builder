@@ -33,7 +33,7 @@ class PickerWidgetState extends State<PickerWidget> {
   void initState() {
     super.initState();
     MediaPickerBuilder.getAlbums(
-      withImages: widget.withImages,
+      withImages: false,
       withVideos: widget.withVideos,
     ).then((albums) {
       setState(() {

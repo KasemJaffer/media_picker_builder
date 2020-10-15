@@ -25,8 +25,8 @@ class MediaPickerBuilderPlugin(private val context: Context) : MethodCallHandler
     private val mainHandler by lazy { Handler(context.mainLooper) }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
-        when {
-            call.method == "getAlbums" -> {
+        when (call.method) {
+            "getAlbums" -> {
                 val withImages = call.argument<Boolean>("withImages")
                 val withVideos = call.argument<Boolean>("withVideos")
                 if (withImages == null || withVideos == null) {
@@ -36,7 +36,7 @@ class MediaPickerBuilderPlugin(private val context: Context) : MethodCallHandler
                 val albums = FileFetcher.getAlbums(context, withImages, withVideos)
                 result.success(albums.toString())
             }
-            call.method == "getThumbnail" -> {
+            "getThumbnail" -> {
                 val fileId = call.argument<String>("fileId")
                 val type = call.argument<Int>("type")
                 if (fileId == null || type == null) {
@@ -64,7 +64,7 @@ class MediaPickerBuilderPlugin(private val context: Context) : MethodCallHandler
                     }
                 }
             }
-            call.method == "getMediaFile" -> {
+            "getMediaFile" -> {
                 val fileIdString = call.argument<String>("fileId")
                 val type = call.argument<Int>("type")
                 val loadThumbnail = call.argument<Boolean>("loadThumbnail")

@@ -130,6 +130,7 @@ class FileFetcher {
                 path: url,
                 thumbnailPath: cachePath?.path,
                 orientation: orientation,
+                videoOrientation: 0,
                 duration: nil,
                 mimeType: nil,
                 type: .IMAGE)
@@ -173,6 +174,7 @@ class FileFetcher {
                 path: url,
                 thumbnailPath: cachePath?.path,
                 orientation: 0,
+                videoOrientation: -1,
                 duration: duration,
                 mimeType: nil,
                 type: .VIDEO)
