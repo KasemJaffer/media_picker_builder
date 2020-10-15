@@ -14,7 +14,6 @@ class MediaFile(
          * Only degrees 0, 90, 180, 270 will work.
          * */
         var orientation: Int,
-        var videoOrientation: Int,
         var mimeType: String?,
 
         /**
@@ -30,7 +29,6 @@ class MediaFile(
                 .put("path", path)
                 .put("thumbnailPath", thumbnailPath)
                 .put("orientation", orientation)
-                .put("videoOrientation", videoOrientation)
                 .put("mimeType", mimeType)
                 .put("duration", duration)
                 .put("type", type.ordinal)

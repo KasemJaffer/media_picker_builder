@@ -172,7 +172,6 @@ class FileFetcher {
                             fileDateAdded,
                             filePath,
                             null,
-                            0,
                             orientation,
                             mimeType,
                             duration,
@@ -196,7 +195,6 @@ class FileFetcher {
                             filePath,
                             null,
                             orientation,
-                            0,
                             mimeType,
                             null,
                             type

@@ -93,7 +93,6 @@ class FileFetcher {
         var url: String? = nil
         var duration: Double? = nil
         var orientation: Int = 0
-        var videoOrientation: Int = 0
         
         let modificationDate = Int((asset.value(forKey: "modificationDate") as! Date).timeIntervalSince1970)
         var cachePath: URL? = getCachePath(for: asset.localIdentifier, modificationDate: modificationDate)
@@ -131,7 +130,6 @@ class FileFetcher {
                 path: url,
                 thumbnailPath: cachePath?.path,
                 orientation: orientation,
-                videoOrientation: videoOrientation,
                 duration: nil,
                 mimeType: nil,
                 type: .IMAGE)
@@ -151,7 +149,7 @@ class FileFetcher {
                     let avURLAsset = avAsset as? AVURLAsset
                     url = avURLAsset?.url.path
 
-                    videoOrientation = getVideoOrientation(avAsset: avAssetData!)
+                    orientation = getVideoOrientation(avAsset: avAssetData!)
                     let durationTime = avAsset?.duration
                     if durationTime != nil {
                         duration = (CMTimeGetSeconds(durationTime!) * 1000).rounded()
@@ -177,8 +175,7 @@ class FileFetcher {
                 dateAdded: dateAdded,
                 path: url,
                 thumbnailPath: cachePath?.path,
-                orientation: 0,
-                videoOrientation: videoOrientation,
+                orientation: orientation,
                 duration: duration,
                 mimeType: nil,
                 type: .VIDEO)

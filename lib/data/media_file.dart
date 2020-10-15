@@ -24,9 +24,6 @@ class MediaFile {
   /// Orientation in degrees (i.e. 0, 90, 180, 270)
   int orientation;
 
-  /// Orientation in degrees (i.e. 0, 90, 180, 270)
-  int videoOrientation;
-
   /// Video duration in milliseconds
   int duration;
 
@@ -40,7 +37,6 @@ class MediaFile {
       this.path,
       this.thumbnailPath,
       this.orientation,
-      this.videoOrientation,
       this.type});
 
   MediaFile.fromJson(Map<String, dynamic> json)
@@ -49,7 +45,6 @@ class MediaFile {
         path = json['path'],
         thumbnailPath = json['thumbnailPath'],
         orientation = json['orientation'],
-        videoOrientation = json['videoOrientation'],
         duration = json['duration'],
         mimeType = json['mimeType'],
         type = MediaType.values[json['type']];
