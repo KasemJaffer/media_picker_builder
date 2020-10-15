@@ -93,6 +93,7 @@ class FileFetcher {
         var url: String? = nil
         var duration: Double? = nil
         var orientation: Int = 0
+        var videoOrientation: Int = 0
         
         let modificationDate = Int((asset.value(forKey: "modificationDate") as! Date).timeIntervalSince1970)
         var cachePath: URL? = getCachePath(for: asset.localIdentifier, modificationDate: modificationDate)
@@ -130,7 +131,7 @@ class FileFetcher {
                 path: url,
                 thumbnailPath: cachePath?.path,
                 orientation: orientation,
-                videoOrientation: 0,
+                videoOrientation: videoOrientation,
                 duration: nil,
                 mimeType: nil,
                 type: .IMAGE)
@@ -142,12 +143,15 @@ class FileFetcher {
                 let options = PHVideoRequestOptions()
                 options.isNetworkAccessAllowed = true
                 PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { (avAssetData, _, info) in
+                    
                     var avAsset = avAssetData
                     if avAssetData is AVComposition {
                         avAsset = convertAvcompositionToAvasset(avComp: (avAssetData as? AVComposition)!)
                     }
                     let avURLAsset = avAsset as? AVURLAsset
                     url = avURLAsset?.url.path
+
+                    videoOrientation = getVideoOrientation(avAsset: avAssetData!)
                     let durationTime = avAsset?.duration
                     if durationTime != nil {
                         duration = (CMTimeGetSeconds(durationTime!) * 1000).rounded()
@@ -174,13 +178,38 @@ class FileFetcher {
                 path: url,
                 thumbnailPath: cachePath?.path,
                 orientation: 0,
-                videoOrientation: -1,
+                videoOrientation: videoOrientation,
                 duration: duration,
                 mimeType: nil,
                 type: .VIDEO)
 
         }
         return mediaFile
+    }
+    
+    private static func getVideoOrientation(avAsset: AVAsset) -> Int {
+        if let t = avAsset.tracks(withMediaType: AVMediaType.video).first?.preferredTransform {
+            if(t.a == 0 && t.b == 1.0 && t.c == -1.0 && t.d == 0)
+            {
+                return 0
+            }
+            // PortraitUpsideDown
+            if(t.a == 0 && t.b == -1.0 && t.c == 1.0 && t.d == 0)  {
+                return 180
+            }
+            // LandscapeRight
+            if(t.a == 1.0 && t.b == 0 && t.c == 0 && t.d == 1.0)
+            {
+                return 90
+            }
+            // LandscapeLeft
+            if(t.a == -1.0 && t.b == 0 && t.c == 0 && t.d == -1.0)
+            {
+                return 270
+            }
+           }
+        
+        return 0
     }
 
     private static func generateThumbnail(asset: PHAsset, destination: URL) -> Bool {
