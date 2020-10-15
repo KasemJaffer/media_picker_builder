@@ -186,23 +186,21 @@ class FileFetcher {
     
     private static func getVideoOrientation(avAsset: AVAsset) -> Int {
         if let t = avAsset.tracks(withMediaType: AVMediaType.video).first?.preferredTransform {
-            if(t.a == 0 && t.b == 1.0 && t.c == -1.0 && t.d == 0)
-            {
-                return 0
+            // Portrait
+            if(t.a == 0 && t.b == 1.0 && t.c == -1.0 && t.d == 0) {
+                return 90
             }
             // PortraitUpsideDown
             if(t.a == 0 && t.b == -1.0 && t.c == 1.0 && t.d == 0)  {
-                return 180
+                return 270
             }
             // LandscapeRight
-            if(t.a == 1.0 && t.b == 0 && t.c == 0 && t.d == 1.0)
-            {
-                return 90
+            if(t.a == 1.0 && t.b == 0 && t.c == 0 && t.d == 1.0) {
+                return 0
             }
             // LandscapeLeft
-            if(t.a == -1.0 && t.b == 0 && t.c == 0 && t.d == -1.0)
-            {
-                return 270
+            if(t.a == -1.0 && t.b == 0 && t.c == 0 && t.d == -1.0) {
+                return 180
             }
            }
         
