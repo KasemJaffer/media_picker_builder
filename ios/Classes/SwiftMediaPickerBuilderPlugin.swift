@@ -10,17 +10,64 @@ public class SwiftMediaPickerBuilderPlugin: NSObject, FlutterPlugin {
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let arguments = call.arguments as? [String: Any] ?? [:]
+        
         switch call.method {
-        case "getAlbums":
-            guard let withImages = (call.arguments as? Dictionary<String, Any>)?["withImages"] as? Bool else {
+        case "getMediaFilesBetween":
+            guard let withImages = arguments["withImages"] as? Bool else {
                 result(FlutterError(code: "INVALID_ARGUMENTS", message: "withImages must not be null", details: nil))
                 return
             }
-            guard let withVideos = (call.arguments as? Dictionary<String, Any>)?["withVideos"] as? Bool else {
+            guard let withVideos = arguments["withVideos"] as? Bool else {
                 result(FlutterError(code: "INVALID_ARGUMENTS", message: "withVideos must not be null", details: nil))
                 return
             }
-            guard let loadPaths = (call.arguments as? Dictionary<String, Any>)?["loadIOSPaths"] as? Bool else {
+            guard let startDateValue = arguments["startDate"] as? Double else {
+                result(FlutterError(code: "INVALID_ARGUMENTS", message: "startDate must not be null", details: nil))
+                return
+            }
+            guard let endDateValue = arguments["endDate"] as? Double else {
+                result(FlutterError(code: "INVALID_ARGUMENTS", message: "endDate must not be null", details: nil))
+                return
+            }
+            
+            let startDate = Date(timeIntervalSince1970: startDateValue)
+            let endDate = Date(timeIntervalSince1970: endDateValue)
+            
+            var assets: [PHAsset] = []
+            
+            if withImages {
+                let imageAssets = MediaFetcher.getAssetsWithDateRange(start: startDate, end: endDate, type: .image)
+                assets.append(contentsOf: imageAssets)
+            }
+            
+            if withVideos {
+                let videoAssets = MediaFetcher.getAssetsWithDateRange(start: startDate, end: endDate, type: .video)
+                assets.append(contentsOf: videoAssets)
+            }
+            
+            let mediaFiles = assets.compactMap { (asset) -> MediaFile? in
+                return FileFetcher.getMediaFile(for: asset, loadPath: false, generateThumbnailIfNotFound: false)
+            }
+            
+            do {
+                let data = try JSONEncoder().encode(mediaFiles)
+                let json = String(data: data, encoding: .utf8)!
+                
+                result(json)
+            } catch {
+                result(FlutterError(code: "ERROR", message: error.localizedDescription, details: nil))
+            }
+        case "getAlbums":
+            guard let withImages = arguments["withImages"] as? Bool else {
+                result(FlutterError(code: "INVALID_ARGUMENTS", message: "withImages must not be null", details: nil))
+                return
+            }
+            guard let withVideos = arguments["withVideos"] as? Bool else {
+                result(FlutterError(code: "INVALID_ARGUMENTS", message: "withVideos must not be null", details: nil))
+                return
+            }
+            guard let loadPaths = arguments["loadIOSPaths"] as? Bool else {
                 result(FlutterError(code: "INVALID_ARGUMENTS", message: "loadIOSPaths must not be null", details: nil))
                 return
             }
@@ -31,11 +78,11 @@ public class SwiftMediaPickerBuilderPlugin: NSObject, FlutterPlugin {
                 result(json)
             }
         case "getThumbnail":
-            guard let fileId = (call.arguments as? Dictionary<String, Any>)?["fileId"] as? String else {
+            guard let fileId = arguments["fileId"] as? String else {
                 result(FlutterError(code: "INVALID_ARGUMENTS", message: "fileId must not be null", details: nil))
                 return
             }
-            guard let type = (call.arguments as? Dictionary<String, Any>)?["type"] as? Int else {
+            guard let type = arguments["type"] as? Int else {
                 result(FlutterError(code: "INVALID_ARGUMENTS", message: "type must not be null", details: nil))
                 return
             }
@@ -48,15 +95,15 @@ public class SwiftMediaPickerBuilderPlugin: NSObject, FlutterPlugin {
                 }
             }
         case "getMediaFile":
-            guard let fileId = (call.arguments as? Dictionary<String, Any>)?["fileId"] as? String else {
+            guard let fileId = arguments["fileId"] as? String else {
                 result(FlutterError(code: "INVALID_ARGUMENTS", message: "fileId must not be null", details: nil))
                 return
             }
-            guard let loadPath = (call.arguments as? Dictionary<String, Any>)?["loadIOSPath"] as? Bool else {
+            guard let loadPath = arguments["loadIOSPath"] as? Bool else {
                 result(FlutterError(code: "INVALID_ARGUMENTS", message: "loadIOSPath must not be null", details: nil))
                 return
             }
-            guard let loadThumbnail = (call.arguments as? Dictionary<String, Any>)?["loadThumbnail"] as? Bool else {
+            guard let loadThumbnail = arguments["loadThumbnail"] as? Bool else {
                 result(FlutterError(code: "INVALID_ARGUMENTS", message: "loadIOSPath must not be null", details: nil))
                 return
             }

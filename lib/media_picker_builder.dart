@@ -1,15 +1,38 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:meta/meta.dart';
-
 import 'package:media_picker_builder/data/album.dart';
 import 'package:media_picker_builder/data/media_file.dart';
+import 'package:meta/meta.dart';
 
 class MediaPickerBuilder {
-  static const MethodChannel _channel =
-      const MethodChannel('media_picker_builder');
+  static const MethodChannel _channel = const MethodChannel('media_picker_builder');
+
+  static Future<List<MediaFile>> getMediaFilesBetween({
+    @required DateTime start,
+    @required DateTime end,
+    bool withImages = true,
+    bool withVideos = true,
+  }) async {
+    assert(start != null);
+    assert(end != null);
+
+    final String json = await _channel.invokeMethod(
+      "getMediaFilesBetween",
+      {
+        "startDate": start.millisecondsSinceEpoch / 1000,
+        "endDate": end.millisecondsSinceEpoch / 1000,
+        "withImages": withImages,
+        "withVideos": withVideos,
+      },
+    );
+
+    final files = await compute(_jsonToMediaFiles, json);
+
+    return files;
+  }
 
   /// Gets list of albums and its content based on the required flags.
   /// This method will also return the thumbnails IF it was already generated.
@@ -30,8 +53,9 @@ class MediaPickerBuilder {
         "loadIOSPaths": loadIOSPaths,
       },
     );
-    final encoded = jsonDecode(json);
-    return encoded.map<Album>((album) => Album.fromJson(album)).toList();
+    final albums = await compute(_jsonToAlbums, json);
+
+    return albums;
   }
 
   /// Returns the thumbnail path of the media file returned in method [getAlbums].
@@ -79,8 +103,10 @@ class MediaPickerBuilder {
         "loadThumbnail": loadThumbnail,
       },
     );
-    final encoded = jsonDecode(json);
-    return MediaFile.fromJson(encoded);
+
+    final file = await compute(_jsonToMediaFile, json);
+
+    return file;
   }
 
   /// A convenient function that converts image orientation to quarter turns for widget [RotatedBox]
@@ -102,4 +128,25 @@ class MediaPickerBuilder {
         return 0;
     }
   }
+}
+
+MediaFile _jsonToMediaFile(dynamic json) {
+  final decoded = jsonDecode(json) as Map;
+  final Map<String, dynamic> map = Map.castFrom(decoded);
+
+  return MediaFile.fromJson(map);
+}
+
+List<MediaFile> _jsonToMediaFiles(dynamic json) {
+  final decoded = jsonDecode(json) as List;
+  final List<Map<String, dynamic>> list = List.castFrom(decoded);
+
+  return list.map<MediaFile>((album) => MediaFile.fromJson(album)).toList();
+}
+
+List<Album> _jsonToAlbums(dynamic json) {
+  final decoded = jsonDecode(json) as List;
+  final List<Map<String, dynamic>> list = List.castFrom(decoded);
+
+  return list.map<Album>((album) => Album.fromJson(album)).toList();
 }
