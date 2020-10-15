@@ -61,7 +61,7 @@ class GalleryWidgetItemState extends State<GalleryWidgetItem> {
         children: [
           widget.mediaFile.thumbnailPath != null
               ? RotatedBox(
-                  quarterTurns: Platform.isIOS
+                  quarterTurns: Platform.isIOS || widget.mediaFile.type == MediaType.VIDEO
                       ? 0
                       : MediaPickerBuilder.orientationToQuarterTurns(
                           widget.mediaFile.orientation),
@@ -81,7 +81,7 @@ class GalleryWidgetItemState extends State<GalleryWidgetItem> {
                       var thumbnail = snapshot.data;
                       widget.mediaFile.thumbnailPath = thumbnail;
                       return RotatedBox(
-                        quarterTurns: Platform.isIOS
+                        quarterTurns: Platform.isIOS || widget.mediaFile.type == MediaType.VIDEO
                             ? 0 // iOS thumbnails have correct orientation
                             : MediaPickerBuilder.orientationToQuarterTurns(
                                 widget.mediaFile.orientation),

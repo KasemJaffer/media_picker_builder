@@ -33,7 +33,8 @@ class FileFetcher {
                 MediaStore.Video.Media.BUCKET_DISPLAY_NAME,
                 MediaStore.Video.Media.BUCKET_ID,
                 MediaStore.Video.Media.MIME_TYPE,
-                MediaStore.Video.Media.DURATION)
+                MediaStore.Video.Media.DURATION,
+                MediaStore.Video.Media.ORIENTATION)
 
         fun getAlbums(context: Context, withImages: Boolean, withVideos: Boolean): JSONArray {
             val albumHashMap: MutableMap<Long, Album> = LinkedHashMap()
@@ -162,15 +163,16 @@ class FileFetcher {
                     val albumId = cursor.getLong(4)         //MediaStore.Video.Media.BUCKET_ID
                     val mimeType = cursor.getString(5)      //MediaStore.Video.Media.MIME_TYPE
                     val duration = cursor.getLong(6)        //MediaStore.Video.Media.DURATION
+                    val orientation = cursor.getInt(7)        //MediaStore.Video.Media.ORIENTATION
 
                     return MediaFile(
                             fileId,
                             albumId,
-                            "", //Passign empty string, because real `albumName` was problematic under certain circumstances
+                            "", //Passing empty string, because real `albumName` was problematic under certain circumstances
                             fileDateAdded,
                             filePath,
                             null,
-                            0,
+                            orientation,
                             mimeType,
                             duration,
                             type
@@ -188,7 +190,7 @@ class FileFetcher {
                     return MediaFile(
                             fileId,
                             albumId,
-                            "", //Passign empty string, because real `albumName` was problematic under certain circumstances
+                            "", //Passing empty string, because real `albumName` was problematic under certain circumstances
                             fileDateAdded,
                             filePath,
                             null,
