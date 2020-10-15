@@ -21,7 +21,12 @@ class MediaFile {
   /// Note: If thumbnail returned is null you will have to call [MediaPickerBuilder.getThumbnail]
   String thumbnailPath;
 
-  /// Orientation in degrees (i.e. 0, 90, 180, 270)
+  /// Orientation in degrees
+  /// 0 - landscape right
+  /// 90 - portrait
+  /// 180 - landscape left
+  /// 270 - portrait upside down
+  /// Exception iOS photos orientation value indicate a shift from vertical axis
   int orientation;
 
   /// Video duration in milliseconds
