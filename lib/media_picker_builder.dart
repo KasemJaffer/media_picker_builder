@@ -8,8 +8,7 @@ import 'package:media_picker_builder/data/album.dart';
 import 'package:media_picker_builder/data/media_file.dart';
 
 class MediaPickerBuilder {
-  static const MethodChannel _channel =
-      const MethodChannel('media_picker_builder');
+  static const MethodChannel _channel = const MethodChannel('media_picker_builder');
 
   /// Gets list of albums and its content based on the required flags.
   /// This method will also return the thumbnails IF it was already generated.
@@ -18,8 +17,8 @@ class MediaPickerBuilder {
   /// [loadIOSPaths] For iOS only, to optimize the speed of querying the files you can set this to false,
   /// but if you do that you will have to get the path & video duration after selection is done
   static Future<List<Album>> getAlbums({
-    @required bool withImages,
-    @required bool withVideos,
+    required bool withImages,
+    required bool withVideos,
     bool loadIOSPaths = true,
   }) async {
     final String json = await _channel.invokeMethod(
@@ -47,8 +46,8 @@ class MediaPickerBuilder {
   ///                    fit: BoxFit.cover,
   ///                    )
   static Future<String> getThumbnail({
-    @required String fileId,
-    @required MediaType type,
+    required String fileId,
+    required MediaType type,
   }) async {
     final String path = await _channel.invokeMethod(
       'getThumbnail',
@@ -65,8 +64,8 @@ class MediaPickerBuilder {
   /// Android always returns the path & duration
   /// [loadThumbnail] Whether or not to generate a thumbnail
   static Future<MediaFile> getMediaFile({
-    @required String fileId,
-    @required MediaType type,
+    required String fileId,
+    required MediaType type,
     bool loadIOSPath = true,
     bool loadThumbnail = false,
   }) async {
