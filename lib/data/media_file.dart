@@ -1,6 +1,3 @@
-import 'package:meta/meta.dart';
-
-@immutable
 class MediaFile {
   /// Unique identifier for the file
   final String id;
@@ -22,7 +19,7 @@ class MediaFile {
   ///                    fit: BoxFit.cover,
   ///                    )
   /// Note: If thumbnail returned is null you will have to call [MediaPickerBuilder.getThumbnail]
-  final String? thumbnailPath;
+  String? thumbnailPath;
 
   /// Orientation in degrees (i.e. 0, 90, 180, 270)
   final int orientation;

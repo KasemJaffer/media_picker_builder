@@ -6,7 +6,7 @@ import 'gallery_widget_item.dart';
 class GalleryWidget extends StatefulWidget {
   final List<MediaFile> mediaFiles;
 
-  GalleryWidget({@required this.mediaFiles});
+  GalleryWidget({required this.mediaFiles});
 
   @override
   State<StatefulWidget> createState() => GalleryWidgetState();

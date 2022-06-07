@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
-import 'package:meta/meta.dart';
 
 import 'package:media_picker_builder/data/album.dart';
 import 'package:media_picker_builder/data/media_file.dart';
