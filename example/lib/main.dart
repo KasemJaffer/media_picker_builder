@@ -1,9 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:media_picker_builder/data/media_file.dart';
 import 'package:media_picker_builder_example/picker/picker_widget.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 void main() => runApp(MyApp());
 
@@ -27,10 +24,7 @@ class _MyAppState extends State<MyApp> {
           child: ElevatedButton(
             child: const Text("Albums"),
             onPressed: () {
-              _checkPermission().then((granted) {
-                //if (!granted) return;
-
-                // To build your own custom picker use this api
+              // To build your own custom picker use this api
 //                MediaPickerBuilder.getAlbums(
 //                  withImages: true,
 //                  withVideos: true,
@@ -38,9 +32,8 @@ class _MyAppState extends State<MyApp> {
 //                  print(albums);
 //                });
 
-                // If you are happy with the example picker then you use this!
-                _buildPicker();
-              });
+              // If you are happy with the example picker then you use this!
+              _buildPicker();
             },
           ),
         ),
@@ -66,13 +59,5 @@ class _MyAppState extends State<MyApp> {
         );
       },
     );
-  }
-
-  Future<bool> _checkPermission() async {
-    final permissionStorageGroup = Platform.isIOS ? Permission.photos : Permission.storage;
-    Map<Permission, PermissionStatus> res = await [
-      permissionStorageGroup,
-    ].request();
-    return res[permissionStorageGroup] == PermissionStatus.granted;
   }
 }
