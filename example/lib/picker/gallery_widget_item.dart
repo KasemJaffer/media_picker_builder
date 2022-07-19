@@ -10,7 +10,7 @@ import 'multi_selector_model.dart';
 class GalleryWidgetItem extends StatefulWidget {
   final MediaFile mediaFile;
 
-  GalleryWidgetItem({this.mediaFile});
+  GalleryWidgetItem({required this.mediaFile});
 
   @override
   State<StatefulWidget> createState() => GalleryWidgetItemState();
@@ -63,10 +63,9 @@ class GalleryWidgetItemState extends State<GalleryWidgetItem> {
               ? RotatedBox(
                   quarterTurns: Platform.isIOS
                       ? 0
-                      : MediaPickerBuilder.orientationToQuarterTurns(
-                          widget.mediaFile.orientation),
+                      : MediaPickerBuilder.orientationToQuarterTurns(widget.mediaFile.orientation),
                   child: Image.file(
-                    File(widget.mediaFile.thumbnailPath),
+                    File(widget.mediaFile.thumbnailPath!),
                     fit: BoxFit.cover,
                   ),
                 )
@@ -75,8 +74,7 @@ class GalleryWidgetItemState extends State<GalleryWidgetItem> {
                     fileId: widget.mediaFile.id,
                     type: widget.mediaFile.type,
                   ),
-                  builder:
-                      (BuildContext context, AsyncSnapshot<String> snapshot) {
+                  builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
                     if (snapshot.hasData) {
                       var thumbnail = snapshot.data;
                       widget.mediaFile.thumbnailPath = thumbnail;
@@ -86,7 +84,7 @@ class GalleryWidgetItemState extends State<GalleryWidgetItem> {
                             : MediaPickerBuilder.orientationToQuarterTurns(
                                 widget.mediaFile.orientation),
                         child: Image.file(
-                          File(thumbnail),
+                          File(thumbnail!),
                           fit: BoxFit.cover,
                         ),
                       );

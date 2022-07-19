@@ -6,14 +6,16 @@ class Album {
   final String name;
   final List<MediaFile> files;
 
-  Album({this.id, this.name, this.files});
+  Album({
+    required this.id,
+    required this.name,
+    required this.files,
+  });
 
   Album.fromJson(Map<String, dynamic> json)
       : id = json['id'],
         name = json['name'],
-        files = json['files']
-            .map<MediaFile>((json) => MediaFile.fromJson(json))
-            .toList();
+        files = json['files'].map<MediaFile>((json) => MediaFile.fromJson(json)).toList();
 
   @override
   bool operator ==(Object other) =>

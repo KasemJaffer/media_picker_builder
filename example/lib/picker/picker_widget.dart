@@ -10,22 +10,23 @@ import 'multi_selector_model.dart';
 class PickerWidget extends StatefulWidget {
   final bool withImages;
   final bool withVideos;
-  final Function(Set<MediaFile> selectedFiles) onDone;
-  final Function() onCancel;
+  final void Function(Set<MediaFile> selectedFiles) onDone;
+  final void Function() onCancel;
 
-  PickerWidget(
-      {@required this.withImages,
-      @required this.withVideos,
-      @required this.onDone,
-      @required this.onCancel});
+  PickerWidget({
+    required this.withImages,
+    required this.withVideos,
+    required this.onDone,
+    required this.onCancel,
+  });
 
   @override
   State<StatefulWidget> createState() => PickerWidgetState();
 }
 
 class PickerWidgetState extends State<PickerWidget> {
-  List<Album> _albums;
-  Album _selectedAlbum;
+  late List<Album> _albums;
+  late Album _selectedAlbum;
   bool _loading = true;
   MultiSelectorModel _selector = MultiSelectorModel();
 
@@ -49,20 +50,19 @@ class PickerWidgetState extends State<PickerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return _loading
-        ? Center(child: CircularProgressIndicator())
-        : _buildWidget();
+    return _loading ? Center(child: CircularProgressIndicator()) : _buildWidget();
   }
 
   _buildWidget() {
-    if (_albums.isEmpty)
-      return Center(child: Text("You have no folders to select from"));
+    if (_albums.isEmpty) return Center(child: Text("You have no folders to select from"));
 
     final dropDownAlbumsWidget = DropdownButton<Album>(
       value: _selectedAlbum,
-      onChanged: (Album newValue) {
+      onChanged: (Album? newValue) {
         setState(() {
-          _selectedAlbum = newValue;
+          if (newValue != null) {
+            _selectedAlbum = newValue;
+          }
         });
       },
       items: _albums.map<DropdownMenuItem<Album>>((Album album) {
@@ -80,7 +80,7 @@ class PickerWidgetState extends State<PickerWidget> {
     );
 
     return ChangeNotifierProvider<MultiSelectorModel>(
-      builder: (context) => _selector,
+      create: (context) => _selector,
       child: Container(
         height: double.infinity,
         color: Colors.white,
@@ -92,9 +92,7 @@ class PickerWidgetState extends State<PickerWidget> {
               children: [
                 SizedBox(
                   width: 50,
-                  child: FlatButton(
-                    padding: EdgeInsets.all(0),
-                    textColor: Colors.blue,
+                  child: TextButton(
                     onPressed: () => widget.onCancel(),
                     child: Text("Cancel"),
                   ),
@@ -104,9 +102,7 @@ class PickerWidgetState extends State<PickerWidget> {
                   builder: (context, selector, child) {
                     return ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: 60),
-                      child: FlatButton(
-                        padding: EdgeInsets.all(0),
-                        textColor: Colors.blue,
+                      child: TextButton(
                         onPressed: () => widget.onDone(_selector.selectedItems),
                         child: Text(
                           "Done (${selector.selectedItems.length})",
